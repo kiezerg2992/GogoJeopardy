@@ -351,6 +351,13 @@
 
       <!-- Host Action Buttons inside Question View (For Admin Judgment) -->
       <div id="hostModalControls" class="hidden border-t border-slate-800 pt-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="w-full flex flex-wrap items-center gap-2">
+          <span class="text-xs text-slate-400 font-medium">Timer:</span>
+          <input id="timerSecondsInput" type="number" min="5" max="300" onchange="setTimerSeconds(this.value)" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-amber-400 font-bold focus:outline-none focus:border-amber-500 disabled:opacity-50">
+          <span class="text-xs text-slate-400">sec</span>
+          <button id="timerToggleBtn" onclick="toggleQuestionTimer()" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition">Start Timer</button>
+          <button onclick="resetQuestionTimer()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">Reset Timer</button>
+        </div>
         <div class="text-xs text-slate-400 font-medium">Host Manual Override:</div>
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="giveGoSignal()" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition">Give Go Signal</button>
@@ -435,13 +442,13 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Per-Question Timer (Seconds)
+              Default Timer (Seconds)
             </label>
             <div class="flex items-center space-x-2">
               <input type="number" id="editorTimer" min="5" max="180" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-amber-400 font-bold focus:outline-none focus:border-amber-500" placeholder="15">
               <span class="text-xs text-slate-400">sec</span>
             </div>
-            <p class="text-[10px] text-slate-500 mt-1">Timer counts down after a team buzzes in.</p>
+            <p class="text-[10px] text-slate-500 mt-1">Default length. The host starts the timer when the class is ready and can change it per question.</p>
           </div>
         </div>
 
@@ -862,12 +869,9 @@
       
       const q = gameState.board[catIdx].questions[qIdx];
       gameState.timerValue = q.timer || 15;
+      gameState.timerMax = gameState.timerValue;
       // If a team won the pick, that team answers this question
-      if (gameState.pickTeam) {
-        gameState.buzzedTeam = gameState.pickTeam;
-        gameState.timerRunning = true;
-        startTimer();
-      }
+      if (gameState.pickTeam) gameState.buzzedTeam = gameState.pickTeam;
       gameState.pickTeam = null;
       gameState.pickPhase = false;
 
@@ -943,7 +947,7 @@
           }
 
           btn.className = btnClass;
-          btn.disabled = gameState.buzzedTeam !== currentRole;
+          btn.disabled = gameState.buzzedTeam !== currentRole || !gameState.timerRunning;
 
           const optionLetter = String.fromCharCode(65 + idx);
           btn.innerHTML = `
@@ -963,7 +967,7 @@
       }
 
       // Update Timer Display & Progress Bar
-      updateTimerUI(q.timer || 15);
+      updateTimerUI();
 
       // Status Banner Text
       if (gameState.banner) {
@@ -974,7 +978,7 @@
         const teamName = gameState.buzzedTeam === 'group1' ? 'GROUP 1' : 'GROUP 2';
         const colorClass = gameState.buzzedTeam === 'group1' ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-800' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800';
         statusBanner.className = `p-3 rounded-xl text-center text-xs font-bold ${colorClass}`;
-        statusBanner.innerText = `🔔 ${teamName} BUZZED IN! TIMER IS RUNNING...`;
+        statusBanner.innerText = `🔔 ${teamName} BUZZED IN! ${gameState.timerRunning ? 'TIMER IS RUNNING...' : 'WAITING FOR THE HOST TO START THE TIMER'}`;
       } else if (gameState.goSignal) {
         statusBanner.classList.remove('hidden');
         statusBanner.className = 'p-3 rounded-xl text-center text-xs font-bold bg-amber-950/80 text-amber-300 border border-amber-800';
@@ -984,6 +988,10 @@
       }
 
       document.getElementById('answerKeyBtn').innerText = showAnswerKey ? 'Hide Answer' : 'Show Answer';
+      const timerInput = document.getElementById('timerSecondsInput');
+      if (document.activeElement !== timerInput) timerInput.value = gameState.timerMax || q.timer || 15;
+      timerInput.disabled = !!gameState.timerRunning;
+      document.getElementById('timerToggleBtn').innerText = gameState.timerRunning ? 'Pause Timer' : 'Start Timer';
 
       // Host Controls Visibility in Modal
       if (currentRole === 'host') {
@@ -1089,6 +1097,52 @@
       updateMainBoardStatus();
     }
 
+    function startQuestionTimer() {
+      if (currentRole !== 'host' || !gameState.activeTile || gameState.timerRunning) return;
+      if (gameState.timerValue <= 0) gameState.timerValue = gameState.timerMax || 15;
+      gameState.banner = null;
+      gameState.timerRunning = true;
+      playSound('go');
+      startTimer();
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function pauseQuestionTimer() {
+      if (currentRole !== 'host' || !gameState.timerRunning) return;
+      gameState.timerRunning = false;
+      stopTimer();
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function toggleQuestionTimer() {
+      if (gameState.timerRunning) pauseQuestionTimer(); else startQuestionTimer();
+    }
+
+    function setTimerSeconds(val) {
+      if (currentRole !== 'host' || !gameState.activeTile || gameState.timerRunning) return;
+      const n = Math.max(5, Math.min(300, parseInt(val) || 15));
+      gameState.timerValue = n;
+      gameState.timerMax = n;
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function resetQuestionTimer() {
+      if (currentRole !== 'host' || !gameState.activeTile) return;
+      gameState.timerRunning = false;
+      stopTimer();
+      gameState.banner = null;
+      gameState.timerValue = gameState.timerMax || 15;
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
     function setBanner(cls, text) {
       gameState.banner = { cls, text };
       updateModalView();
@@ -1118,11 +1172,8 @@
       if (!gameState.goSignal || gameState.buzzedTeam) return;
       gameState.buzzedTeam = team;
       gameState.goSignal = false;
-      const { catIdx, qIdx } = gameState.activeTile;
-      gameState.timerValue = gameState.board[catIdx].questions[qIdx].timer || 15;
-      gameState.timerRunning = true;
+      gameState.timerRunning = false; // host starts the timer when the class is ready
       playSound('buzz');
-      startTimer();
       syncStateToLocalStorage();
       broadcastState();
       updateModalView();
@@ -1157,7 +1208,7 @@
       
       const { catIdx, qIdx } = gameState.activeTile;
       const q = gameState.board[catIdx].questions[qIdx];
-      const max = maxSecs || q.timer || 15;
+      const max = maxSecs || gameState.timerMax || q.timer || 15;
 
       timerDisplay.innerText = `${gameState.timerValue}s`;
 
@@ -1179,6 +1230,12 @@
       playSound('wrong');
 
       const buzzed = gameState.buzzedTeam;
+      if (!buzzed) {
+        setBanner('p-3 rounded-xl text-center text-sm font-black bg-amber-950 text-amber-300 border border-amber-800', "⏱️ TIME'S UP!");
+        syncStateToLocalStorage();
+        broadcastState();
+        return;
+      }
       if (buzzed && (buzzed === 'group1' || buzzed === 'group2')) {
         // Deduct 50 points as specified
         gameState.scores[buzzed] -= 50;
