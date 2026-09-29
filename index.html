@@ -77,6 +77,9 @@
 
         <!-- Role Badge & Header Controls -->
         <div class="flex items-center space-x-3">
+          <!-- Sync status -->
+          <div id="syncPill" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 font-semibold">Sync: connecting...</div>
+
           <!-- Audio Toggle -->
           <button id="muteBtn" onclick="toggleMute()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm border border-slate-700 transition flex items-center gap-1.5" title="Toggle Sound">
             <svg id="audioIcon" class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
@@ -758,7 +761,10 @@
       updateRoleUI();
       renderBoard();
       syncStateToLocalStorage();
-      if (role === 'host') { broadcastBoard(false); broadcastState(); if (gameState.timerRunning) startTimer(); }
+      if (role === 'host') {
+        const go = () => { broadcastBoard(false); broadcastState(); if (gameState.timerRunning) startTimer(); };
+        if (FIREBASE_DB_URL) fetch(BUS_URL, { method: 'DELETE' }).then(go, go); else go();
+      }
       else sendMsg({ type: 'HELLO' });
     }
 
@@ -1391,24 +1397,61 @@
     const RELAY_URL = 'https://ntfy.sh/gogo-orientation-arcade-ki-7f3a9c21';
     const seenMsgs = new Set();
 
+    // OPTIONAL sturdier sync: paste your Firebase Realtime Database URL here
+    // (looks like https://your-project-default-rtdb.firebaseio.com). Leave '' to use the free relay.
+    const FIREBASE_DB_URL = '';
+    const BUS_URL = FIREBASE_DB_URL.replace(/\/$/, '') + '/arcade_bus.json';
+
+    function setSync(kind, text) {
+      const el = document.getElementById('syncPill');
+      if (!el) return;
+      el.innerText = 'Sync: ' + text;
+      el.className = 'text-xs px-2.5 py-1.5 rounded-lg border font-semibold ' + (kind === 'ok'
+        ? 'border-emerald-700 bg-emerald-950/60 text-emerald-300'
+        : kind === 'err' ? 'border-rose-700 bg-rose-950/60 text-rose-300'
+        : 'border-slate-700 bg-slate-800 text-slate-400');
+    }
+
     function sendMsg(m) {
       m.sender = tabId;
       m.mid = tabId + '_' + Date.now() + Math.random().toString(36).slice(2, 6);
       try { channel.postMessage(m); } catch (e) {}
-      try { fetch(RELAY_URL, { method: 'POST', body: JSON.stringify(m) }).catch(() => {}); } catch (e) {}
+      const body = JSON.stringify(m);
+      const req = FIREBASE_DB_URL
+        ? fetch(BUS_URL, { method: 'POST', body: JSON.stringify({ d: body }) })
+        : fetch(RELAY_URL, { method: 'POST', body });
+      req.then(r => {
+        if (r.ok) setSync('ok', 'live');
+        else if (r.status === 429) setSync('err', 'relay limit reached');
+        else setSync('err', 'error ' + r.status);
+      }).catch(() => setSync('err', 'offline'));
     }
 
     function relayConnect() {
       try {
-        const es = new EventSource(RELAY_URL + '/sse');
-        es.onopen = () => { if (currentRole && currentRole !== 'host') sendMsg({ type: 'HELLO' }); };
-        es.onmessage = (e) => {
-          try {
-            const ev = JSON.parse(e.data);
-            if (ev.event === 'message') handleMsg(JSON.parse(ev.message));
-          } catch (err) {}
-        };
-      } catch (e) {}
+        if (FIREBASE_DB_URL) {
+          const es = new EventSource(BUS_URL);
+          es.onopen = () => { setSync('ok', 'live'); if (currentRole && currentRole !== 'host') sendMsg({ type: 'HELLO' }); };
+          es.onerror = () => setSync('err', 'reconnecting...');
+          es.addEventListener('put', (e) => {
+            try {
+              const ev = JSON.parse(e.data);
+              if (ev.path === '/' || !ev.data || !ev.data.d) return; // ignore old history
+              handleMsg(JSON.parse(ev.data.d));
+            } catch (err) {}
+          });
+        } else {
+          const es = new EventSource(RELAY_URL + '/sse');
+          es.onopen = () => { setSync('ok', 'live'); if (currentRole && currentRole !== 'host') sendMsg({ type: 'HELLO' }); };
+          es.onerror = () => setSync('err', 'reconnecting...');
+          es.onmessage = (e) => {
+            try {
+              const ev = JSON.parse(e.data);
+              if (ev.event === 'message') handleMsg(JSON.parse(ev.message));
+            } catch (err) {}
+          };
+        }
+      } catch (e) { setSync('err', 'offline'); }
     }
 
     // Host sends the game state (small); board questions are sent separately.
