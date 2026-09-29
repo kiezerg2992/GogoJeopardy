@@ -351,7 +351,8 @@
 
       <!-- Host Action Buttons inside Question View (For Admin Judgment) -->
       <div id="hostModalControls" class="hidden border-t border-slate-800 pt-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="text-xs text-slate-400 font-medium">\1<div class="flex flex-wrap items-center gap-2">
+        <div class="text-xs text-slate-400 font-medium">Host Manual Override:</div>
+        <div class="flex flex-wrap items-center gap-2">
           <button onclick="giveGoSignal()" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition">Give Go Signal</button>
           <button onclick="resetBuzzers()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">Reset Buzzers</button>
           <button id="answerKeyBtn" onclick="toggleAnswerKey()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">Show Answer</button>
@@ -1585,7 +1586,8 @@
 
     window.onload = function() {
       loadStateFromLocalStorage();
-      gameState.timerRunning = false;
+      // Start every session clean: keep scores/answered tiles, but never resume a half-open question
+      Object.assign(gameState, { activeTile: null, goSignal: false, buzzedTeam: null, pickPhase: false, pickTeam: null, banner: null, timerRunning: false });
       relayConnect();
       cleanExpiredSessions();
       updateLoginBadges();
