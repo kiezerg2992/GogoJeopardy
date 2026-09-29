@@ -845,7 +845,13 @@
     }
 
     function handleTileClick(catIdx, qIdx) {
-      if (currentRole !== 'host') return;
+      if (currentRole === 'host') { hostOpenTile(catIdx, qIdx); return; }
+      if (currentRole && currentRole === gameState.pickTeam && !gameState.activeTile) {
+        sendMsg({ type: 'PICK', team: currentRole, catIdx, qIdx });
+      }
+    }
+
+    function hostOpenTile(catIdx, qIdx) {
       showAnswerKey = false;
       gameState.banner = null;
       gameState.activeTile = { catIdx, qIdx };
@@ -855,6 +861,14 @@
       
       const q = gameState.board[catIdx].questions[qIdx];
       gameState.timerValue = q.timer || 15;
+      // If a team won the pick, that team answers this question
+      if (gameState.pickTeam) {
+        gameState.buzzedTeam = gameState.pickTeam;
+        gameState.timerRunning = true;
+        startTimer();
+      }
+      gameState.pickTeam = null;
+      gameState.pickPhase = false;
 
       syncStateToLocalStorage();
       broadcastState();
@@ -991,6 +1005,19 @@
       document.getElementById('scoreGroup1').innerText = `Points: ${gameState.scores.group1}`;
       document.getElementById('scoreGroup2').innerText = `Points: ${gameState.scores.group2}`;
 
+      if (!gameState.activeTile && gameState.pickPhase) {
+        const t = gameState.pickTeam;
+        const base = 'text-xs px-2 py-0.5 rounded-md font-';
+        const names = { group1: 'Group 1', group2: 'Group 2' };
+        statusText.innerText = t ? `${names[t]} buzzed first - choose a question!` : 'Buzzers open - first to buzz picks the question!';
+        [['group1', g1Status], ['group2', g2Status]].forEach(([g, el]) => {
+          if (!t) { el.innerText = 'READY'; el.className = base + 'bold bg-amber-500/20 text-amber-400 border border-amber-500/40'; }
+          else if (g === t) { el.innerText = 'PICKS!'; el.className = base + 'black bg-amber-500 text-slate-950 animate-pulse'; }
+          else { el.innerText = 'Locked Out'; el.className = base + 'semibold bg-slate-800 text-slate-500 border border-slate-700'; }
+        });
+        return;
+      }
+
       if (!gameState.activeTile) {
         statusText.innerText = "Select a Question Tile";
         g1Status.innerText = "Idle";
@@ -1032,12 +1059,13 @@
 
     function giveGoSignal() {
       if (currentRole !== 'host') return;
-      if (!gameState.activeTile) return;
+      if (!gameState.activeTile) { gameState.pickPhase = true; gameState.pickTeam = null; }
       
       gameState.goSignal = true;
       gameState.banner = null;
       gameState.buzzedTeam = null;
       playSound('go');
+      updateMainBoardStatus();
 
       syncStateToLocalStorage();
       broadcastState();
@@ -1049,12 +1077,15 @@
       gameState.banner = null;
       gameState.goSignal = false;
       gameState.buzzedTeam = null;
+      gameState.pickPhase = false;
+      gameState.pickTeam = null;
       gameState.timerRunning = false;
       stopTimer();
 
       syncStateToLocalStorage();
       broadcastState();
       updateModalView();
+      updateMainBoardStatus();
     }
 
     function setBanner(cls, text) {
@@ -1065,13 +1096,25 @@
     // Players only SEND a buzz request; the host decides who was first.
     function playerBuzz(team) {
       if (currentRole !== team) return;
-      if (!gameState.activeTile || !gameState.goSignal || gameState.buzzedTeam) return;
+      const canPick = gameState.pickPhase && !gameState.pickTeam;
+      if (!(gameState.activeTile || canPick) || !gameState.goSignal || gameState.buzzedTeam) return;
       playSound('buzz');
       sendMsg({ type: 'BUZZ', team });
     }
 
     function hostBuzz(team) {
-      if (!gameState.activeTile || !gameState.goSignal || gameState.buzzedTeam) return;
+      if (!gameState.activeTile) {
+        // Pick phase: first team to buzz earns the right to choose the question
+        if (!gameState.pickPhase || !gameState.goSignal || gameState.pickTeam) return;
+        gameState.pickTeam = team;
+        gameState.goSignal = false;
+        playSound('buzz');
+        updateMainBoardStatus();
+        syncStateToLocalStorage();
+        broadcastState();
+        return;
+      }
+      if (!gameState.goSignal || gameState.buzzedTeam) return;
       gameState.buzzedTeam = team;
       gameState.goSignal = false;
       const { catIdx, qIdx } = gameState.activeTile;
@@ -1253,6 +1296,8 @@
       if (currentRole !== 'host') return;
       gameState.scores = { group1: 0, group2: 0 };
       gameState.banner = null;
+      gameState.pickPhase = false;
+      gameState.pickTeam = null;
       gameState.timerRunning = false;
       stopTimer();
       gameState.answeredTiles = {};
@@ -1501,6 +1546,7 @@
       }
       else if (m.type === 'HELLO' && isHost) { broadcastBoard(false); broadcastState(); }
       else if (m.type === 'BUZZ' && isHost) hostBuzz(m.team);
+      else if (m.type === 'PICK' && isHost) { if (m.team === gameState.pickTeam && !gameState.activeTile && !gameState.answeredTiles[m.catIdx + '_' + m.qIdx]) hostOpenTile(m.catIdx, m.qIdx); }
       else if (m.type === 'ANSWER' && isHost) hostAnswer(m.team, m.idx);
     }
 
