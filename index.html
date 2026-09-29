@@ -1346,6 +1346,10 @@
       document.getElementById('editorTypeSelect').value = q.type;
       document.getElementById('editorTimer').value = q.timer || 15;
 
+      // clear leftovers from the previously loaded question first
+      for (let i = 0; i < 4; i++) document.getElementById(`choiceInput${i}`).value = '';
+      document.getElementById('editorOpenAnswerText').value = '';
+      document.querySelectorAll('input[name="correctChoiceRadio"]').forEach(r => r.checked = false);
       if (q.type === 'multiple') {
         (q.choices || []).forEach((ch, idx) => {
           const inp = document.getElementById(`choiceInput${idx}`);
