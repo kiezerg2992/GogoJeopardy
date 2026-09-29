@@ -70,7 +70,6 @@
           <div>
             <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
               Jeopardy Training Arcade
-              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">PRO</span>
             </h1>
             <p class="text-xs text-slate-400 hidden sm:block">Interactive Team Training System</p>
           </div>
@@ -184,7 +183,7 @@
 
     <!-- FOOTER -->
     <footer class="bg-slate-900/80 border-t border-slate-800 py-3 px-4 text-center text-xs text-slate-500">
-      GoGoGrandparent Internal Arcade Platform &bull; Real-time Multi-Tab Sync Enabled
+      GoGoGrandparent Orientation Training Arcade &bull; Made by Ki's Favorite Trainee
     </footer>
   </div>
 
@@ -211,7 +210,7 @@
             </div>
             <div>
               <div class="text-sm font-bold text-white flex items-center gap-2">
-                <span>Host / Game Master</span>
+                <span>Host</span>
                 <span id="badgeStatusHost" class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Available</span>
               </div>
               <div class="text-xs text-slate-400">Controls questions, Go Signals, and scoring overrides</div>
@@ -253,6 +252,15 @@
           </div>
           <svg class="w-5 h-5 text-slate-500 group-hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
+      </div>
+
+      <div id="hostPwPanel" class="hidden bg-slate-800/60 border border-amber-500/40 rounded-2xl p-4 space-y-3">
+        <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider">Host Password</label>
+        <div class="flex gap-2">
+          <input id="hostPwInput" type="password" autocomplete="off" onkeydown="if(event.key==='Enter')submitHostPassword()" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Enter password">
+          <button onclick="submitHostPassword()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs">Enter</button>
+        </div>
+        <p id="hostPwError" class="hidden text-xs text-rose-400">Wrong password. Try again.</p>
       </div>
 
       <div id="loginWarning" class="text-xs text-rose-400 bg-rose-950/40 border border-rose-800/50 p-3 rounded-xl hidden text-center">
@@ -299,6 +307,11 @@
         <h4 class="text-xl font-extrabold text-amber-400 tracking-tight">QUESTION LOCKED</h4>
         <p class="text-sm text-slate-300 max-w-md mx-auto">A group must buzz in to reveal the question and answer choices!</p>
         <p class="text-xs text-amber-400/80 italic">Host can press <span class="font-bold text-amber-300">[ Give Go Signal ]</span> to enable player buzzers.</p>
+      </div>
+
+      <!-- PLAYER BUZZ BUTTON (inside the question popup so it is clickable) -->
+      <div id="modalBuzzWrap" class="hidden">
+        <button id="modalBuzzBtn" onclick="playerBuzz(currentRole)" class="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-lg uppercase tracking-wider pulse-urgent">BUZZ IN NOW!</button>
       </div>
 
       <!-- REVEALED QUESTION CONTENT -->
@@ -691,7 +704,32 @@
       });
     }
 
+    const HOST_PASSWORDS = ['yestobangs', 'gogoki'];
+
     function selectRole(role) {
+      if (role === 'host') {
+        document.getElementById('hostPwPanel').classList.remove('hidden');
+        document.getElementById('hostPwInput').focus();
+        return;
+      }
+      enterRole(role);
+    }
+
+    function submitHostPassword() {
+      const input = document.getElementById('hostPwInput');
+      const err = document.getElementById('hostPwError');
+      if (HOST_PASSWORDS.includes(input.value.trim().toLowerCase())) {
+        err.classList.add('hidden');
+        input.value = '';
+        document.getElementById('hostPwPanel').classList.add('hidden');
+        enterRole('host');
+      } else {
+        err.classList.remove('hidden');
+        input.select();
+      }
+    }
+
+    function enterRole(role) {
       const sessions = getActiveSessions();
       const warning = document.getElementById('loginWarning');
 
@@ -709,7 +747,8 @@
       updateRoleUI();
       renderBoard();
       syncStateToLocalStorage();
-      broadcastState();
+      if (role === 'host') { broadcastBoard(false); broadcastState(); if (gameState.timerRunning) startTimer(); }
+      else sendMsg({ type: 'HELLO' });
     }
 
     function logoutRole() {
@@ -788,6 +827,8 @@
     }
 
     function handleTileClick(catIdx, qIdx) {
+      if (currentRole !== 'host') return;
+      gameState.banner = null;
       gameState.activeTile = { catIdx, qIdx };
       gameState.goSignal = false;
       gameState.buzzedTeam = null;
@@ -868,7 +909,7 @@
           }
 
           btn.className = btnClass;
-          btn.disabled = (gameState.buzzedTeam !== currentRole && currentRole !== 'host');
+          btn.disabled = gameState.buzzedTeam !== currentRole;
 
           const optionLetter = String.fromCharCode(65 + idx);
           btn.innerHTML = `
@@ -891,7 +932,10 @@
       updateTimerUI(q.timer || 15);
 
       // Status Banner Text
-      if (gameState.buzzedTeam) {
+      if (gameState.banner) {
+        statusBanner.className = gameState.banner.cls;
+        statusBanner.innerText = gameState.banner.text;
+      } else if (gameState.buzzedTeam) {
         statusBanner.classList.remove('hidden');
         const teamName = gameState.buzzedTeam === 'group1' ? 'GROUP 1' : 'GROUP 2';
         const colorClass = gameState.buzzedTeam === 'group1' ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-800' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800';
@@ -912,6 +956,9 @@
         hostControls.classList.add('hidden');
       }
 
+      const canBuzz = (currentRole === 'group1' || currentRole === 'group2') && gameState.goSignal && !gameState.buzzedTeam && !gameState.banner;
+      document.getElementById('modalBuzzWrap').classList.toggle('hidden', !canBuzz);
+
       // Sync status text on main board
       updateMainBoardStatus();
     }
@@ -920,6 +967,8 @@
       const statusText = document.getElementById('gameStatusText');
       const g1Status = document.getElementById('g1BuzzStatus');
       const g2Status = document.getElementById('g2BuzzStatus');
+      document.getElementById('scoreGroup1').innerText = `$${gameState.scores.group1}`;
+      document.getElementById('scoreGroup2').innerText = `$${gameState.scores.group2}`;
 
       if (!gameState.activeTile) {
         statusText.innerText = "Select a Question Tile";
@@ -985,22 +1034,27 @@
       updateModalView();
     }
 
+    function setBanner(cls, text) {
+      gameState.banner = { cls, text };
+      updateModalView();
+    }
+
+    // Players only SEND a buzz request; the host decides who was first.
     function playerBuzz(team) {
       if (currentRole !== team) return;
-      if (!gameState.activeTile) return;
-      if (!gameState.goSignal) return;
-      if (gameState.buzzedTeam !== null) return; // Already buzzed
+      if (!gameState.activeTile || !gameState.goSignal || gameState.buzzedTeam) return;
+      playSound('buzz');
+      sendMsg({ type: 'BUZZ', team });
+    }
 
+    function hostBuzz(team) {
+      if (!gameState.activeTile || !gameState.goSignal || gameState.buzzedTeam) return;
       gameState.buzzedTeam = team;
       gameState.goSignal = false;
-      
       const { catIdx, qIdx } = gameState.activeTile;
-      const q = gameState.board[catIdx].questions[qIdx];
-      gameState.timerValue = q.timer || 15;
+      gameState.timerValue = gameState.board[catIdx].questions[qIdx].timer || 15;
       gameState.timerRunning = true;
-
       playSound('buzz');
-
       startTimer();
       syncStateToLocalStorage();
       broadcastState();
@@ -1011,17 +1065,12 @@
       stopTimer();
       timerInterval = setInterval(() => {
         if (!gameState.timerRunning) return;
-
         if (gameState.timerValue > 0) {
           gameState.timerValue--;
-          if (gameState.timerValue <= 5 && gameState.timerValue > 0) {
-            playSound('tick');
-          }
+          if (gameState.timerValue <= 5 && gameState.timerValue > 0) playSound('tick');
           updateTimerUI();
-          broadcastTimerTick();
-        } else {
-          // TIMER EXPIRED!
-          handleTimerExpired();
+        } else if (currentRole === 'host') {
+          handleTimerExpired(); // only the host ends the round
         }
       }, 1000);
     }
@@ -1074,10 +1123,7 @@
         gameState.answeredTiles[`${catIdx}_${qIdx}`] = { answeredBy: buzzed, correct: false };
       }
 
-      const statusBanner = document.getElementById('modalStatusBanner');
-      statusBanner.classList.remove('hidden');
-      statusBanner.className = 'p-3 rounded-xl text-center text-sm font-black bg-rose-950 text-rose-300 border border-rose-800 animate-bounce';
-      statusBanner.innerText = `⏱️ TIME EXPIRED! -50 Points deducted from ${buzzed === 'group1' ? 'Group 1' : 'Group 2'}`;
+      setBanner('p-3 rounded-xl text-center text-sm font-black bg-rose-950 text-rose-300 border border-rose-800', `⏱️ TIME EXPIRED! -50 Points deducted from ${buzzed === 'group1' ? 'Group 1' : 'Group 2'}`);
 
       syncStateToLocalStorage();
       broadcastState();
@@ -1086,8 +1132,12 @@
     }
 
     function submitMultipleChoice(choiceIndex) {
-      if (!gameState.activeTile) return;
-      if (gameState.buzzedTeam !== currentRole && currentRole !== 'host') return;
+      if (currentRole === 'host') return;
+      sendMsg({ type: 'ANSWER', team: currentRole, idx: choiceIndex });
+    }
+
+    function hostAnswer(team, choiceIndex) {
+      if (!gameState.activeTile || gameState.buzzedTeam !== team || !gameState.timerRunning) return;
 
       stopTimer();
       gameState.timerRunning = false;
@@ -1095,27 +1145,19 @@
       const { catIdx, qIdx } = gameState.activeTile;
       const q = gameState.board[catIdx].questions[qIdx];
       const isCorrect = (choiceIndex === q.correct);
-      const team = gameState.buzzedTeam || 'group1';
+      const name = team === 'group1' ? 'Group 1' : 'Group 2';
 
       if (isCorrect) {
         playSound('correct');
         gameState.scores[team] += q.val;
+        setBanner('p-3 rounded-xl text-center text-sm font-black bg-emerald-950 text-emerald-300 border border-emerald-800', `🎉 CORRECT ANSWER! +$${q.val} awarded to ${name}`);
       } else {
         playSound('wrong');
-        gameState.scores[team] -= 50; // Automatic -50 for incorrect answer
+        gameState.scores[team] -= 50;
+        setBanner('p-3 rounded-xl text-center text-sm font-black bg-rose-950 text-rose-300 border border-rose-800', `❌ INCORRECT! -50 Points deducted from ${name}`);
       }
 
       gameState.answeredTiles[`${catIdx}_${qIdx}`] = { answeredBy: team, correct: isCorrect };
-
-      const statusBanner = document.getElementById('modalStatusBanner');
-      statusBanner.classList.remove('hidden');
-      if (isCorrect) {
-        statusBanner.className = 'p-3 rounded-xl text-center text-sm font-black bg-emerald-950 text-emerald-300 border border-emerald-800';
-        statusBanner.innerText = `🎉 CORRECT ANSWER! +$${q.val} awarded to ${team === 'group1' ? 'Group 1' : 'Group 2'}`;
-      } else {
-        statusBanner.className = 'p-3 rounded-xl text-center text-sm font-black bg-rose-950 text-rose-300 border border-rose-800';
-        statusBanner.innerText = `❌ INCORRECT! -50 Points deducted from ${team === 'group1' ? 'Group 1' : 'Group 2'}`;
-      }
 
       syncStateToLocalStorage();
       broadcastState();
@@ -1156,7 +1198,10 @@
     }
 
     function closeQuestionModal() {
+      if (currentRole !== 'host') { document.getElementById('questionModal').classList.add('hidden'); return; }
       stopTimer();
+      gameState.banner = null;
+      gameState.timerRunning = false;
       gameState.activeTile = null;
       gameState.goSignal = false;
       gameState.buzzedTeam = null;
@@ -1170,6 +1215,9 @@
     function resetScores() {
       if (currentRole !== 'host') return;
       gameState.scores = { group1: 0, group2: 0 };
+      gameState.banner = null;
+      gameState.timerRunning = false;
+      stopTimer();
       gameState.answeredTiles = {};
       gameState.activeTile = null;
       gameState.goSignal = false;
@@ -1275,6 +1323,7 @@
 
       syncStateToLocalStorage();
       broadcastState();
+      broadcastBoard(true);
       renderBoard();
       closeEditorModal();
       if (gameState.activeTile) updateModalView();
@@ -1285,12 +1334,14 @@
         gameState.board = JSON.parse(JSON.stringify(DEFAULT_BOARD_DATA));
         syncStateToLocalStorage();
         broadcastState();
+        broadcastBoard(true);
         renderBoard();
         closeEditorModal();
       }
     }
 
     function syncStateToLocalStorage() {
+      if (currentRole !== 'host') return;
       try {
         localStorage.setItem('gogo_jeopardy_state', JSON.stringify(gameState));
       } catch (e) {}
@@ -1305,35 +1356,81 @@
       } catch (e) {}
     }
 
+    // Free public relay so the host and the players can be on DIFFERENT devices.
+    const RELAY_URL = 'https://ntfy.sh/gogo-orientation-arcade-ki-7f3a9c21';
+    const seenMsgs = new Set();
+
+    function sendMsg(m) {
+      m.sender = tabId;
+      m.mid = tabId + '_' + Date.now() + Math.random().toString(36).slice(2, 6);
+      try { channel.postMessage(m); } catch (e) {}
+      try { fetch(RELAY_URL, { method: 'POST', body: JSON.stringify(m) }).catch(() => {}); } catch (e) {}
+    }
+
+    function relayConnect() {
+      try {
+        const es = new EventSource(RELAY_URL + '/sse');
+        es.onopen = () => { if (currentRole && currentRole !== 'host') sendMsg({ type: 'HELLO' }); };
+        es.onmessage = (e) => {
+          try {
+            const ev = JSON.parse(e.data);
+            if (ev.event === 'message') handleMsg(JSON.parse(ev.message));
+          } catch (err) {}
+        };
+      } catch (e) {}
+    }
+
+    // Host sends the game state (small); board questions are sent separately.
     function broadcastState() {
-      channel.postMessage({ type: 'STATE_SYNC', state: gameState, sender: tabId });
+      if (currentRole !== 'host') return;
+      gameState.rev = Math.max(Date.now(), (gameState.rev || 0) + 1);
+      const { board, ...st } = gameState;
+      sendMsg({ type: 'STATE', state: st });
     }
 
-    function broadcastTimerTick() {
-      channel.postMessage({ type: 'TIMER_TICK', timerValue: gameState.timerValue, sender: tabId });
-    }
-
-    // Handle Broadcast Channel Messages
-    channel.onmessage = (event) => {
-      const data = event.data;
-      if (!data) return;
-
-      if (data.type === 'SESSION_UPDATE') {
-        updateLoginBadges();
-      } else if (data.type === 'STATE_SYNC') {
-        gameState = data.state;
-        renderBoard();
-        updateMainBoardStatus();
-        if (gameState.activeTile) {
-          updateModalView();
-        } else {
-          document.getElementById('questionModal').classList.add('hidden');
+    function broadcastBoard(all) {
+      if (currentRole !== 'host') return;
+      gameState.board.forEach((cat, idx) => {
+        if (all || JSON.stringify(cat) !== JSON.stringify(DEFAULT_BOARD_DATA[idx])) {
+          sendMsg({ type: 'BOARD', idx, cat });
         }
-      } else if (data.type === 'TIMER_TICK') {
-        gameState.timerValue = data.timerValue;
-        updateTimerUI();
+      });
+    }
+
+    function applyState(st) {
+      if (st.rev && gameState.rev && st.rev < gameState.rev) return;
+      gameState = Object.assign({}, st, { board: gameState.board });
+      renderBoard();
+      updateMainBoardStatus();
+      if (gameState.timerRunning) startTimer(); else stopTimer();
+      if (gameState.activeTile) {
+        updateModalView();
+      } else {
+        document.getElementById('questionModal').classList.add('hidden');
       }
-    };
+    }
+
+    function handleMsg(m) {
+      if (!m || m.sender === tabId) return;
+      if (m.mid) {
+        if (seenMsgs.has(m.mid)) return;
+        seenMsgs.add(m.mid);
+        if (seenMsgs.size > 300) seenMsgs.delete(seenMsgs.values().next().value);
+      }
+      const isHost = currentRole === 'host';
+      if (m.type === 'SESSION_UPDATE') updateLoginBadges();
+      else if (m.type === 'STATE' && !isHost) applyState(m.state);
+      else if (m.type === 'BOARD' && !isHost) {
+        gameState.board[m.idx] = m.cat;
+        renderBoard();
+        if (gameState.activeTile) updateModalView();
+      }
+      else if (m.type === 'HELLO' && isHost) { broadcastBoard(false); broadcastState(); }
+      else if (m.type === 'BUZZ' && isHost) hostBuzz(m.team);
+      else if (m.type === 'ANSWER' && isHost) hostAnswer(m.team, m.idx);
+    }
+
+    channel.onmessage = (event) => handleMsg(event.data);
 
     // Keyboard Shortcuts (Spacebar, 'A', 'L')
     window.addEventListener('keydown', (e) => {
@@ -1368,6 +1465,8 @@
 
     window.onload = function() {
       loadStateFromLocalStorage();
+      gameState.timerRunning = false;
+      relayConnect();
       cleanExpiredSessions();
       updateLoginBadges();
 
