@@ -118,10 +118,14 @@
             <span id="g1BuzzStatus" class="text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-400 border border-slate-700">Idle</span>
           </div>
           <div class="flex items-baseline justify-between mt-2">
-            <div id="scoreGroup1" class="text-3xl md:text-4xl font-black text-cyan-400 tracking-tight">$0</div>
+            <div id="scoreGroup1" class="text-3xl md:text-4xl font-black text-cyan-400 tracking-tight">Points: 0</div>
             <div id="g1SubText" class="text-xs text-slate-500 font-medium">Spacebar / 'A' Key</div>
           </div>
           <!-- Buzzer Action Button for Group 1 Player -->
+          <div id="g1AdjustBtns" class="hidden mt-3 flex gap-2">
+            <button onclick="adjustScore('group1', -50)" class="flex-1 py-2 bg-slate-800 hover:bg-rose-900/50 text-rose-300 font-bold rounded-xl text-sm border border-slate-700 transition">- 50</button>
+            <button onclick="adjustScore('group1', 50)" class="flex-1 py-2 bg-slate-800 hover:bg-emerald-900/50 text-emerald-300 font-bold rounded-xl text-sm border border-slate-700 transition">+ 50</button>
+          </div>
           <div id="g1BuzzBtnContainer" class="mt-3 hidden">
             <button id="buzzBtnG1" onclick="playerBuzz('group1')" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 active:bg-cyan-600 text-slate-950 font-black rounded-xl text-base uppercase tracking-wider transition shadow-lg shadow-cyan-500/20 active:scale-95">
               BUZZ IN NOW!
@@ -159,10 +163,14 @@
             <span id="g2BuzzStatus" class="text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-400 border border-slate-700">Idle</span>
           </div>
           <div class="flex items-baseline justify-between mt-2">
-            <div id="scoreGroup2" class="text-3xl md:text-4xl font-black text-emerald-400 tracking-tight">$0</div>
+            <div id="scoreGroup2" class="text-3xl md:text-4xl font-black text-emerald-400 tracking-tight">Points: 0</div>
             <div id="g2SubText" class="text-xs text-slate-500 font-medium">Spacebar / 'L' Key</div>
           </div>
           <!-- Buzzer Action Button for Group 2 Player -->
+          <div id="g2AdjustBtns" class="hidden mt-3 flex gap-2">
+            <button onclick="adjustScore('group2', -50)" class="flex-1 py-2 bg-slate-800 hover:bg-rose-900/50 text-rose-300 font-bold rounded-xl text-sm border border-slate-700 transition">- 50</button>
+            <button onclick="adjustScore('group2', 50)" class="flex-1 py-2 bg-slate-800 hover:bg-emerald-900/50 text-emerald-300 font-bold rounded-xl text-sm border border-slate-700 transition">+ 50</button>
+          </div>
           <div id="g2BuzzBtnContainer" class="mt-3 hidden">
             <button id="buzzBtnG2" onclick="playerBuzz('group2')" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-base uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 active:scale-95">
               BUZZ IN NOW!
@@ -340,8 +348,10 @@
 
       <!-- Host Action Buttons inside Question View (For Admin Judgment) -->
       <div id="hostModalControls" class="hidden border-t border-slate-800 pt-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="text-xs text-slate-400 font-medium">Host Manual Override:</div>
-        <div class="flex items-center space-x-2">
+        <div class="text-xs text-slate-400 font-medium">\1<div class="flex flex-wrap items-center gap-2">
+          <button onclick="giveGoSignal()" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition">Give Go Signal</button>
+          <button onclick="resetBuzzers()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">Reset Buzzers</button>
+          <button id="answerKeyBtn" onclick="toggleAnswerKey()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">Show Answer</button>
           <button onclick="awardPoints('correct')" class="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition">
             + Award Correct
           </button>
@@ -389,11 +399,11 @@
           <div>
             <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Point Value / Tier</label>
             <select id="editorTierSelect" onchange="loadSelectedEditorQuestion()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-              <option value="100">$100 (Tier 1)</option>
-              <option value="200">$200 (Tier 2)</option>
-              <option value="300">$300 (Tier 3)</option>
-              <option value="400">$400 (Tier 4)</option>
-              <option value="500">$500 (Tier 5)</option>
+              <option value="100">100 Points (Tier 1)</option>
+              <option value="200">200 Points (Tier 2)</option>
+              <option value="300">300 Points (Tier 3)</option>
+              <option value="400">400 Points (Tier 4)</option>
+              <option value="500">500 Points (Tier 5)</option>
             </select>
           </div>
         </div>
@@ -545,6 +555,7 @@
     let currentRole = null; // 'host', 'group1', 'group2'
     let tabId = 'tab_' + Math.random().toString(36).substr(2, 9);
     let isMuted = false;
+    let showAnswerKey = false;
 
     let gameState = {
       board: JSON.parse(JSON.stringify(DEFAULT_BOARD_DATA)),
@@ -765,6 +776,7 @@
       const g1BuzzContainer = document.getElementById('g1BuzzBtnContainer');
       const g2BuzzContainer = document.getElementById('g2BuzzBtnContainer');
 
+      ['g1AdjustBtns', 'g2AdjustBtns'].forEach(id => document.getElementById(id).classList.toggle('hidden', currentRole !== 'host'));
       if (currentRole === 'host') {
         badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 mr-2"></span> <span class="font-bold text-amber-400">Host / Admin</span>`;
         hostControls.classList.remove('hidden');
@@ -814,11 +826,11 @@
           if (isAnswered) {
             tileBtn.className = 'bg-slate-900/40 border border-slate-800 text-slate-600 rounded-xl p-4 text-center cursor-not-allowed opacity-50 flex flex-col items-center justify-center font-bold text-lg';
             tileBtn.disabled = true;
-            tileBtn.innerHTML = `<span>$${q.val}</span><span class="text-[10px] text-slate-500 uppercase mt-0.5">${isAnswered.answeredBy === 'group1' ? 'G1' : 'G2'} ${isAnswered.correct ? '✓' : '✗'}</span>`;
+            tileBtn.innerHTML = `<span>Points: ${q.val}</span><span class="text-[10px] text-slate-500 uppercase mt-0.5">${isAnswered.answeredBy === 'group1' ? 'G1' : 'G2'} ${isAnswered.correct ? '✓' : '✗'}</span>`;
           } else {
             tileBtn.className = 'tile-hover bg-slate-800/80 hover:bg-slate-700/90 border-2 border-amber-500/30 hover:border-amber-400 text-amber-400 rounded-xl p-4 text-center transition flex flex-col items-center justify-center font-black text-xl md:text-2xl shadow-lg shadow-black/40';
             // Notice: NO question type labels on tile! Strictly dollar value.
-            tileBtn.innerHTML = `<span>$${q.val}</span>`;
+            tileBtn.innerHTML = `<span>Points: ${q.val}</span>`;
           }
 
           boardEl.appendChild(tileBtn);
@@ -828,6 +840,7 @@
 
     function handleTileClick(catIdx, qIdx) {
       if (currentRole !== 'host') return;
+      showAnswerKey = false;
       gameState.banner = null;
       gameState.activeTile = { catIdx, qIdx };
       gameState.goSignal = false;
@@ -857,7 +870,7 @@
       const q = cat.questions[qIdx];
 
       document.getElementById('modalCategoryTag').innerText = cat.title;
-      document.getElementById('modalValueTag').innerText = `$${q.val}`;
+      document.getElementById('modalValueTag').innerText = `Points: ${q.val}`;
 
       const lockedContainer = document.getElementById('lockedStateContainer');
       const revealedContainer = document.getElementById('revealedStateContainer');
@@ -894,8 +907,8 @@
           let btnClass = "p-4 rounded-2xl border-2 text-left font-semibold text-sm transition flex items-center justify-between ";
           
           if (currentRole === 'host') {
-            // Host sees correct answer highlighted
-            if (idx === q.correct) {
+            // Host only sees the correct answer if they press Show Answer
+            if (showAnswerKey && idx === q.correct) {
               btnClass += "bg-emerald-950/60 border-emerald-500 text-emerald-200";
             } else {
               btnClass += "bg-slate-800/60 border-slate-700 text-slate-300";
@@ -917,14 +930,14 @@
               <span class="w-7 h-7 rounded-lg bg-slate-700 flex items-center justify-center font-bold text-xs text-amber-400">${optionLetter}</span>
               <span>${choiceText}</span>
             </div>
-            ${currentRole === 'host' && idx === q.correct ? '<span class="text-xs bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-black">CORRECT</span>' : ''}
+            ${currentRole === 'host' && showAnswerKey && idx === q.correct ? '<span class="text-xs bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-black">CORRECT</span>' : ''}
           `;
           choicesBox.appendChild(btn);
         });
       } else {
         // Open Question
         choicesBox.classList.add('hidden');
-        openAnsBox.classList.remove('hidden');
+        openAnsBox.classList.toggle('hidden', !(currentRole === 'host' && showAnswerKey));
         document.getElementById('openAnswerText').innerText = q.answer || "N/A";
       }
 
@@ -949,6 +962,8 @@
         statusBanner.classList.add('hidden');
       }
 
+      document.getElementById('answerKeyBtn').innerText = showAnswerKey ? 'Hide Answer' : 'Show Answer';
+
       // Host Controls Visibility in Modal
       if (currentRole === 'host') {
         hostControls.classList.remove('hidden');
@@ -967,8 +982,8 @@
       const statusText = document.getElementById('gameStatusText');
       const g1Status = document.getElementById('g1BuzzStatus');
       const g2Status = document.getElementById('g2BuzzStatus');
-      document.getElementById('scoreGroup1').innerText = `$${gameState.scores.group1}`;
-      document.getElementById('scoreGroup2').innerText = `$${gameState.scores.group2}`;
+      document.getElementById('scoreGroup1').innerText = `Points: ${gameState.scores.group1}`;
+      document.getElementById('scoreGroup2').innerText = `Points: ${gameState.scores.group2}`;
 
       if (!gameState.activeTile) {
         statusText.innerText = "Select a Question Tile";
@@ -1005,8 +1020,8 @@
         g2Status.className = "text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-400 border border-slate-700";
       }
 
-      document.getElementById('scoreGroup1').innerText = `$${gameState.scores.group1}`;
-      document.getElementById('scoreGroup2').innerText = `$${gameState.scores.group2}`;
+      document.getElementById('scoreGroup1').innerText = `Points: ${gameState.scores.group1}`;
+      document.getElementById('scoreGroup2').innerText = `Points: ${gameState.scores.group2}`;
     }
 
     function giveGoSignal() {
@@ -1014,6 +1029,7 @@
       if (!gameState.activeTile) return;
       
       gameState.goSignal = true;
+      gameState.banner = null;
       gameState.buzzedTeam = null;
       playSound('go');
 
@@ -1024,6 +1040,7 @@
 
     function resetBuzzers() {
       if (currentRole !== 'host') return;
+      gameState.banner = null;
       gameState.goSignal = false;
       gameState.buzzedTeam = null;
       gameState.timerRunning = false;
@@ -1150,7 +1167,7 @@
       if (isCorrect) {
         playSound('correct');
         gameState.scores[team] += q.val;
-        setBanner('p-3 rounded-xl text-center text-sm font-black bg-emerald-950 text-emerald-300 border border-emerald-800', `🎉 CORRECT ANSWER! +$${q.val} awarded to ${name}`);
+        setBanner('p-3 rounded-xl text-center text-sm font-black bg-emerald-950 text-emerald-300 border border-emerald-800', `🎉 CORRECT ANSWER! +${q.val} Points awarded to ${name}`);
       } else {
         playSound('wrong');
         gameState.scores[team] -= 50;
@@ -1200,6 +1217,7 @@
     function closeQuestionModal() {
       if (currentRole !== 'host') { document.getElementById('questionModal').classList.add('hidden'); return; }
       stopTimer();
+      showAnswerKey = false;
       gameState.banner = null;
       gameState.timerRunning = false;
       gameState.activeTile = null;
@@ -1210,6 +1228,19 @@
       broadcastState();
       updateModalView();
       renderBoard();
+    }
+
+    function adjustScore(team, delta) {
+      if (currentRole !== 'host') return;
+      gameState.scores[team] += delta;
+      syncStateToLocalStorage();
+      broadcastState();
+      updateMainBoardStatus();
+    }
+
+    function toggleAnswerKey() {
+      showAnswerKey = !showAnswerKey;
+      updateModalView();
     }
 
     function resetScores() {
