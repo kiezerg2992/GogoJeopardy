@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoGoGrandparent Jeopardy Training Arcade</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #2b3990;
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Tilted SVG Pattern Overlay matching GoGo Grandparent background */
+        .gogo-bg-pattern {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            z-index: 0;
+            pointer-events: none;
+            transform: rotate(-22deg);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='%23ffffff' fill-opacity='0.085'%3E%3C!-- Location Pin --%3E%3Cpath d='M20 15 C13 15 8 20 8 27 C8 36 20 50 20 50 C20 50 32 36 32 27 C32 20 27 15 20 15 Z M20 31 C17.8 31 16 29.2 16 27 C16 24.8 17.8 23 20 23 C22.2 23 24 24.8 24 27 C24 29.2 22.2 31 20 31 Z'/%3E%3C!-- Car Icon --%3E%3Cpath d='M95 25 L88 32 L70 32 L63 25 L55 25 L55 38 L103 38 L103 25 Z M65 38 C62.8 38 61 39.8 61 42 C61 44.2 62.8 46 65 46 C67.2 46 69 44.2 69 42 C69 39.8 67.2 38 65 38 Z M93 38 C90.8 38 89 39.8 89 42 C89 44.2 90.8 46 93 46 C95.2 46 97 44.2 97 42 C97 39.8 95.2 38 93 38 Z'/%3E%3C!-- Dining Circle (Fork & Knife) --%3E%3Cg transform='translate(125, 80)'%3E%3Ccircle cx='0' cy='0' r='18' stroke='%23ffffff' stroke-width='3' stroke-opacity='0.85' fill='none'/%3E%3Cpath d='M-6 -8 L-6 -1 L-4 2 L-4 8 M-8 -8 L-8 -2 L-6 2 M-4 -8 L-4 -2 M4 -8 L4 8 C7 -8 7 -2 4 -8' stroke='%23ffffff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C!-- Dining Circle 2 --%3E%3Cg transform='translate(25, 130)'%3E%3Ccircle cx='0' cy='0' r='16' stroke='%23ffffff' stroke-width='3' stroke-opacity='0.85' fill='none'/%3E%3Cpath d='M-5 -7 L-5 -1 L-3 2 L-3 7 M-7 -7 L-7 -2 M3 -7 L3 7' stroke='%23ffffff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C!-- Arrow in Circle --%3E%3Cg transform='translate(70, 95)'%3E%3Ccircle cx='0' cy='0' r='16' fill='%23ffffff' fill-opacity='0.12'/%3E%3Cpath d='M-6 0 L6 0 M1 5 L6 0 L1 -5' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/g%3E%3C!-- Shopping Cart --%3E%3Cpath d='M130 20 L134 20 L138 32 L152 32 L156 22 L136 22 M140 37 C138.9 37 138 37.9 138 39 C138 40.1 138.9 41 140 41 C141.1 41 142 40.1 142 39 C142 37.9 141.1 37 140 37 Z M150 37 C148.9 37 148 37.9 148 39 C148 40.1 148.9 41 150 41 C150.1 41 152 40.1 152 39 C152 37.9 150.1 37 150 37 Z'/%3E%3C!-- Curved Route Line --%3E%3Cpath d='M10 80 Q 30 60, 50 80 T 90 80' stroke='%23ffffff' stroke-width='2.5' fill='none' stroke-dasharray='4 4'/%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 180px 180px;
+        }
+
+        /* Glassmorphism styling */
+        .glass-card {
+            background: rgba(30, 41, 89, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-card-gold {
+            background: rgba(45, 35, 10, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.2);
+        }
+
+        .jeopardy-tile {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .jeopardy-tile:hover:not(.answered) {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 24px -6px rgba(59, 130, 246, 0.6);
+            border-color: #60a5fa;
+        }
+
+        .answered {
+            background: rgba(15, 23, 42, 0.6) !important;
+            border-color: rgba(255, 255, 255, 0.05) !important;
+            opacity: 0.35;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Pulse Animations */
+        @keyframes buzzerPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 18px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .buzzer-active {
+            animation: buzzerPulse 1.2s infinite;
+        }
+
+        /* Gold gradient text */
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FFF5C0 0%, #F59E0B 50%, #D97706 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(129, 140, 248, 0.8);
+        }
+    </style>
+</head>
+<body class="relative flex flex-col justify-between min-h-screen text-slate-100">
+
+    <!-- Tilted Background Pattern -->
+    <div class="gogo-bg-pattern"></div>
+    
+    <!-- Deep Gradient Background Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-br from-indigo-900/60 via-blue-900/80 to-slate-950/90 pointer-events-none z-0"></div>
+
+    <!-- Main Wrapper -->
+    <div class="relative z-10 flex flex-col flex-grow">
+
+        <!-- HEADER BAR -->
+        <header class="glass-card sticky top-0 z-30 px-4 py-3 border-b border-indigo-500/20">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+                
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center shadow-lg shadow-amber-500/30 text-slate-950 font-black text-xl">
+                        GG
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                            GoGoGrandparent <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase font-bold tracking-wider">Jeopardy Arcade</span>
+                        </h1>
+                        <p class="text-xs text-indigo-200/80 font-medium">Orientation & Training Arcade</p>
+                    </div>
+                </div>
+
+                <!-- Center Controls & Admin Toolbar -->
+                <div id="adminControls" class="hidden flex items-center gap-2 flex-wrap">
+                    <button onclick="openDeckEditor()" class="px-3 py-1.5 rounded-lg bg-indigo-600/60 hover:bg-indigo-600 text-indigo-100 font-semibold text-xs border border-indigo-400/30 transition flex items-center gap-1.5 shadow-sm">
+                        <span>⚙️</span> Deck Editor
+                    </button>
+                    <button onclick="triggerResetConfirmation()" class="px-3 py-1.5 rounded-lg bg-rose-600/60 hover:bg-rose-600 text-rose-100 font-semibold text-xs border border-rose-400/30 transition flex items-center gap-1.5 shadow-sm">
+                        <span>🔄</span> Reset Game
+                    </button>
+                    <button onclick="giveGoSignal()" class="px-3 py-1.5 rounded-lg bg-emerald-600/70 hover:bg-emerald-600 text-emerald-100 font-bold text-xs border border-emerald-400/40 transition flex items-center gap-1.5 shadow-md animate-pulse">
+                        <span>🚀</span> Go Signal <span class="bg-black/30 text-[10px] px-1.5 py-0.5 rounded font-mono">Space</span>
+                    </button>
+                </div>
+
+                <!-- Right Side - Sound & Log Out -->
+                <div class="flex items-center space-x-3">
+                    <!-- Sound FX Toggle -->
+                    <button onclick="toggleAudio()" id="audioToggleBtn" class="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-indigo-200 border border-indigo-500/30 text-xs flex items-center gap-1">
+                        <span id="audioIcon">🔊</span>
+                    </button>
+
+                    <!-- Role Badge -->
+                    <span id="roleBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-800/80 text-indigo-300 border border-indigo-500/30">
+                        Player Mode
+                    </span>
+
+                    <!-- Prominent Log Out Button -->
+                    <button onclick="performLogout()" class="px-3.5 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white font-bold text-xs border border-red-400/40 shadow-lg shadow-red-900/40 transition flex items-center gap-1.5">
+                        <span>🚪</span> Log Out
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="max-w-7xl mx-auto w-full px-4 py-6 flex-grow flex flex-col gap-6">
+
+            <!-- SCOREBOARD SECTION -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- GROUP 1 CARD -->
+                <div id="cardGroup1" class="glass-card rounded-2xl p-4 border-l-4 border-l-blue-500 transition-all duration-300 relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs uppercase tracking-wider font-extrabold text-blue-400 flex items-center gap-1">
+                                <span>🛡️</span> Team 1
+                            </div>
+                            <input type="text" id="group1Name" value="Group 1" onchange="updateGroupNames()" 
+                                class="bg-transparent text-xl font-black text-white focus:outline-none focus:border-b border-blue-400 w-48">
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-indigo-200/70 font-semibold uppercase">Total Score</span>
+                            <div id="group1Score" class="text-3xl font-black text-blue-300 tracking-tight">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Buzzer Status Indicator for Team 1 -->
+                    <div id="buzzerIndicator1" class="hidden mb-3 py-1.5 px-3 rounded-lg bg-blue-500/20 border border-blue-400/40 text-blue-200 text-xs font-bold text-center animate-bounce">
+                        ⚡ BUZZED IN FIRST! ⚡
+                    </div>
+
+                    <!-- Score Adjusters & Manual Buzz -->
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-indigo-500/20">
+                        <button onclick="buzzIn(1)" class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm border border-blue-400/30 shadow-md active:scale-95 transition flex items-center justify-center gap-2">
+                            <span>🔔 BUZZ</span>
+                            <span class="bg-black/30 text-[10px] px-1.5 py-0.5 rounded font-mono">1 or A</span>
+                        </button>
+                        
+                        <div id="adminScoreBtns1" class="hidden flex items-center gap-1">
+                            <button onclick="adjustScore(1, 50)" class="px-2 py-1 rounded bg-emerald-600/40 hover:bg-emerald-600 text-emerald-200 font-bold text-xs border border-emerald-500/30">+50</button>
+                            <button onclick="adjustScore(1, 100)" class="px-2 py-1 rounded bg-emerald-600/70 hover:bg-emerald-600 text-emerald-100 font-bold text-xs border border-emerald-500/30">+100</button>
+                            <button onclick="adjustScore(1, -50)" class="px-2 py-1 rounded bg-rose-600/40 hover:bg-rose-600 text-rose-200 font-bold text-xs border border-rose-500/30">-50</button>
+                            <button onclick="adjustScore(1, -100)" class="px-2 py-1 rounded bg-rose-600/70 hover:bg-rose-600 text-rose-100 font-bold text-xs border border-rose-500/30">-100</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GROUP 2 CARD -->
+                <div id="cardGroup2" class="glass-card rounded-2xl p-4 border-l-4 border-l-amber-500 transition-all duration-300 relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs uppercase tracking-wider font-extrabold text-amber-400 flex items-center gap-1">
+                                <span>⚡</span> Team 2
+                            </div>
+                            <input type="text" id="group2Name" value="Group 2" onchange="updateGroupNames()" 
+                                class="bg-transparent text-xl font-black text-white focus:outline-none focus:border-b border-amber-400 w-48">
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-indigo-200/70 font-semibold uppercase">Total Score</span>
+                            <div id="group2Score" class="text-3xl font-black text-amber-300 tracking-tight">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Buzzer Status Indicator for Team 2 -->
+                    <div id="buzzerIndicator2" class="hidden mb-3 py-1.5 px-3 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs font-bold text-center animate-bounce">
+                        ⚡ BUZZED IN FIRST! ⚡
+                    </div>
+
+                    <!-- Score Adjusters & Manual Buzz -->
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-indigo-500/20">
+                        <button onclick="buzzIn(2)" class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-black text-sm border border-amber-400/30 shadow-md active:scale-95 transition flex items-center justify-center gap-2">
+                            <span>🔔 BUZZ</span>
+                            <span class="bg-black/30 text-[10px] px-1.5 py-0.5 rounded font-mono">2 or L</span>
+                        </button>
+                        
+                        <div id="adminScoreBtns2" class="hidden flex items-center gap-1">
+                            <button onclick="adjustScore(2, 50)" class="px-2 py-1 rounded bg-emerald-600/40 hover:bg-emerald-600 text-emerald-200 font-bold text-xs border border-emerald-500/30">+50</button>
+                            <button onclick="adjustScore(2, 100)" class="px-2 py-1 rounded bg-emerald-600/70 hover:bg-emerald-600 text-emerald-100 font-bold text-xs border border-emerald-500/30">+100</button>
+                            <button onclick="adjustScore(2, -50)" class="px-2 py-1 rounded bg-rose-600/40 hover:bg-rose-600 text-rose-200 font-bold text-xs border border-rose-500/30">-50</button>
+                            <button onclick="adjustScore(2, -100)" class="px-2 py-1 rounded bg-rose-600/70 hover:bg-rose-600 text-rose-100 font-bold text-xs border border-rose-500/30">-100</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- BUZZER GLOBAL BANNER -->
+            <div id="buzzerBanner" class="glass-card rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 border border-indigo-500/30">
+                <div class="flex items-center gap-2">
+                    <span id="buzzerStateIcon" class="text-xl">🔒</span>
+                    <div>
+                        <span id="buzzerStateTitle" class="font-extrabold text-sm text-indigo-200">BUZZERS LOCKED</span>
+                        <p id="buzzerStateDesc" class="text-xs text-indigo-300/70">Waiting for Host to trigger Go Signal (Spacebar)</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="hostGoSignalBtn" onclick="giveGoSignal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-900/40 border border-emerald-300/40 transition active:scale-95 flex items-center gap-2">
+                        <span>🚀 GIVE GO SIGNAL</span>
+                        <kbd class="bg-black/30 px-1.5 py-0.5 rounded text-[10px] font-mono">SPACE</kbd>
+                    </button>
+                    <button onclick="resetBuzzers()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-200 text-xs font-semibold border border-indigo-500/30 transition">
+                        Reset Buzzer Lock
+                    </button>
+                </div>
+            </div>
+
+            <!-- JEOPARDY BOARD GRID -->
+            <div id="jeopardyBoard" class="grid grid-cols-5 gap-2 md:gap-3.5 w-full">
+                <!-- Javascript populates category headers and 25 question tiles dynamically -->
+            </div>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="glass-card py-4 text-center border-t border-indigo-500/20 text-xs text-indigo-200/70">
+            <p class="font-semibold tracking-wide">GoGoGrandparent Orientation Training Arcade • Made by Ki's Favorite Trainee</p>
+        </footer>
+    </div>
+
+    <!-- LOGIN / ROLE SELECTION MODAL OVERLAY -->
+    <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-md w-full border border-indigo-400/30 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center mx-auto mb-3 shadow-xl shadow-amber-500/20 text-slate-950 font-black text-3xl">
+                    GG
+                </div>
+                <h2 class="text-2xl font-black text-white tracking-tight">Welcome Trainee!</h2>
+                <p class="text-xs text-indigo-200/80 mt-1">Select your access mode to enter the Jeopardy Training Arcade</p>
+            </div>
+
+            <!-- Login Tabs / Mode Selector -->
+            <div class="space-y-4">
+                
+                <!-- Player Fast Access -->
+                <button onclick="loginAsPlayer()" class="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm border border-blue-400/30 shadow-lg shadow-blue-900/40 transition transform active:scale-98 flex items-center justify-center gap-2">
+                    <span>🎮 Continue as Player / Trainee</span>
+                </button>
+
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-indigo-500/30"></div>
+                    <span class="flex-shrink mx-3 text-xs text-indigo-300 font-bold uppercase tracking-wider">or Admin Host Access</span>
+                    <div class="flex-grow border-t border-indigo-500/30"></div>
+                </div>
+
+                <!-- Admin Login Form -->
+                <form onsubmit="handleAdminLogin(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-indigo-200 uppercase mb-1">Username</label>
+                        <input type="text" id="adminUser" placeholder="Enter admin username" required
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-indigo-500/40 text-white text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-indigo-200 uppercase mb-1">Password</label>
+                        <input type="password" id="adminPass" placeholder="Enter admin password" required
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/80 border border-indigo-500/40 text-white text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition">
+                    </div>
+
+                    <div id="loginError" class="hidden text-xs text-rose-400 font-bold text-center bg-rose-950/50 p-2 rounded-lg border border-rose-500/30">
+                        Invalid Admin credentials. Please try again.
+                    </div>
+
+                    <button type="submit" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-sm border border-amber-300 shadow-lg shadow-amber-500/20 transition transform active:scale-98 flex items-center justify-center gap-2">
+                        <span>🔑 Log In as Admin Host</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTION DISPLAY MODAL -->
+    <div id="questionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+        <div class="glass-card-gold rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-amber-500/40 shadow-2xl relative flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
+            
+            <!-- Category Header & Value Badge -->
+            <div class="flex items-center justify-between border-b border-amber-500/20 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-extrabold text-xs uppercase tracking-wider" id="qModalCategory">
+                        Category
+                    </span>
+                    <span class="text-xs text-indigo-200 font-bold" id="qModalType">Multiple Choice</span>
+                </div>
+                <div class="text-2xl font-black text-amber-400" id="qModalValue">$100</div>
+            </div>
+
+            <!-- Question Text -->
+            <div class="py-2">
+                <h3 class="text-xl sm:text-2xl font-bold text-white leading-relaxed" id="qModalQuestion">
+                    Question text goes here...
+                </h3>
+            </div>
+
+            <!-- Options (For Multiple Choice) -->
+            <div id="qModalOptionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <!-- Javascript injects option cards -->
+            </div>
+
+            <!-- Answer Revelation Box -->
+            <div id="qModalAnswerBox" class="hidden p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 animate-fade-in">
+                <div class="text-xs uppercase font-extrabold text-emerald-400 mb-1">Correct Answer:</div>
+                <div id="qModalAnswerText" class="text-base font-bold text-white">Answer here</div>
+            </div>
+
+            <!-- Question Modal Buzzer Bar -->
+            <div class="p-3 rounded-2xl bg-slate-900/80 border border-indigo-500/30 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <span id="modalBuzzerIcon" class="text-lg">🔒</span>
+                    <span id="modalBuzzerText" class="text-xs font-bold text-indigo-200">Buzzers Locked</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="buzzIn(1)" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs">
+                        Buzz Group 1 (1/A)
+                    </button>
+                    <button onclick="buzzIn(2)" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs">
+                        Buzz Group 2 (2/L)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Actions in Question Modal -->
+            <div id="adminQuestionActions" class="hidden flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-amber-500/20">
+                <button onclick="toggleAnswerReveal()" id="revealBtn" class="px-4 py-2 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold text-xs border border-indigo-400/30">
+                    👁️ Reveal Answer
+                </button>
+
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="awardQuestionPoints(1)" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow">
+                        + Award Group 1
+                    </button>
+                    <button onclick="awardQuestionPoints(2)" class="px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow">
+                        + Award Group 2
+                    </button>
+                    <button onclick="closeQuestionModal(true)" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow">
+                        ✓ Mark Answered & Close
+                    </button>
+                </div>
+            </div>
+
+            <!-- Close Modal X Button -->
+            <button onclick="closeQuestionModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold">
+                ✕
+            </button>
+        </div>
+    </div>
+
+    <!-- RESET CONFIRMATION MODAL -->
+    <div id="resetModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+        <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-md w-full border border-rose-500/40 shadow-2xl text-center space-y-4">
+            <div class="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-3xl font-black border border-rose-500/30">
+                ⚠️
+            </div>
+            <h3 class="text-xl font-black text-white">Reset Arcade Game?</h3>
+            <p class="text-xs text-indigo-200/80 leading-relaxed">
+                This will reset all Team Scores to <span class="text-amber-400 font-bold">0</span>, clear all active buzzers, and mark all 25 question tiles as <span class="text-emerald-400 font-bold">Unanswered</span>.
+            </p>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button onclick="closeResetModal()" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-200 font-bold text-xs border border-indigo-500/30">
+                    Cancel
+                </button>
+                <button onclick="confirmResetGame()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs border border-rose-400/40 shadow-lg shadow-rose-900/50">
+                    Yes, Reset Game
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DECK EDITOR MODAL -->
+    <div id="deckEditorModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+        <div class="glass-card rounded-3xl p-6 max-w-4xl w-full border border-indigo-400/30 shadow-2xl flex flex-col h-[85vh]">
+            <div class="flex items-center justify-between border-b border-indigo-500/20 pb-4 mb-4">
+                <div>
+                    <h3 class="text-xl font-black text-white flex items-center gap-2">
+                        <span>⚙️</span> GoGo Jeopardy Deck Editor
+                    </h3>
+                    <p class="text-xs text-indigo-200/70">Customize categories, questions, options, and answers</p>
+                </div>
+                <button onclick="closeDeckEditor()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-indigo-300 text-xs font-bold hover:bg-slate-700">
+                    Close ✕
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-grow space-y-6 pr-2" id="deckEditorContainer">
+                <!-- Dynamically populated question forms -->
+            </div>
+
+            <div class="border-t border-indigo-500/20 pt-4 mt-4 flex items-center justify-between gap-3">
+                <button onclick="resetDefaultDeck()" class="px-4 py-2 rounded-xl bg-amber-600/30 hover:bg-amber-600 text-amber-200 font-bold text-xs border border-amber-500/30">
+                    Reset Default Questions
+                </button>
+                <button onclick="saveDeckChanges()" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg">
+                    💾 Save Deck Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. AUDIO ENGINE (Web Audio API - No external sound files needed)
+           ========================================================================== */
+        let audioCtx = null;
+        let isMuted = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            if (isMuted) return;
+            try {
+                initAudio();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'buzz') {
+                    // Dramatic Buzzer Chime
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'go') {
+                    // Unlock Go Signal Fanfare
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'correct') {
+                    // Success Tone
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(587.33, now); // D5
+                    osc.frequency.setValueAtTime(880, now + 0.15); // A5
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'wrong') {
+                    // Penalty Tone
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(164.81, now + 0.15);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                }
+            } catch (e) {
+                console.log("Audio playback error:", e);
+            }
+        }
+
+        function toggleAudio() {
+            isMuted = !isMuted;
+            document.getElementById('audioIcon').textContent = isMuted ? '🔇' : '🔊';
+        }
+
+        /* ==========================================================================
+           2. DEFAULT GOGOGRANDPARENT QUESTION DATASET
+           ========================================================================== */
+        const DEFAULT_DECK = [
+            {
+                category: "Ride Requests",
+                questions: [
+                    { value: 100, type: "mc", q: "What basic information is mandatory to schedule a ride for a GoGo member?", options: ["A) Name, pickup, drop-off & phone", "B) Favorite driver color", "C) Credit score", "D) Pet's age"], answer: "A) Name, pickup, drop-off & phone", answered: false },
+                    { value: 200, type: "mc", q: "How far in advance can a client pre-schedule a GoGo ride?", options: ["A) Only 10 mins", "B) Up to 30 days", "C) Exactly 2 hours", "D) 1 year"], answer: "B) Up to 30 days", answered: false },
+                    { value: 300, type: "open", q: "What action should an operator take if a driver arrives at the wrong pickup point?", answer: "Call or message the driver immediately via dispatch platform and update exact pickup notes for the client.", answered: false },
+                    { value: 400, type: "mc", q: "Which rideshare platforms does GoGoGrandparent integrate with for trip fulfillment?", options: ["A) Uber & Lyft", "B) Horse Carriage", "C) City Metro Buses", "D) Delivery Drones"], answer: "A) Uber & Lyft", answered: false },
+                    { value: 500, type: "open", q: "What is the mandatory procedure when a rider requests a Wheelchair Accessible Vehicle (WAV)?", answer: "Select the WAV vehicle tier on the dispatch portal and confirm with rider that loading assistance is required.", answered: false }
+                ]
+            },
+            {
+                category: "Meals & Groceries",
+                questions: [
+                    { value: 100, type: "mc", q: "How do GoGo members order groceries without using a smartphone or app?", options: ["A) By calling a live GoGo operator", "B) Fax machine", "C) Postal mail", "D) Telegraph"], answer: "A) By calling a live GoGo operator", answered: false },
+                    { value: 200, type: "mc", q: "True or False: Operators are allowed to substitute grocery items without client consent.", options: ["A) True", "B) False"], answer: "B) False", answered: false },
+                    { value: 300, type: "open", q: "Where are client dietary restrictions and preferences recorded?", answer: "Directly in the client profile notes in the GoGo operator platform.", answered: false },
+                    { value: 400, type: "mc", q: "What is required prior to placing a grocery order totaling over $100?", options: ["A) Verbal payment re-confirmation", "B) Manager signature", "C) Driver background check", "D) Nothing"], answer: "A) Verbal payment re-confirmation", answered: false },
+                    { value: 500, type: "open", q: "How does GoGo handle custom restaurant menu requests from members?", answer: "Operator reviews order line-by-line, confirms pricing estimate with client, and submits via DoorDash/UberEats integration.", answered: false }
+                ]
+            },
+            {
+                category: "Home & Health",
+                questions: [
+                    { value: 100, type: "mc", q: "Which of the following home services can be arranged through GoGo?", options: ["A) Housekeeping & Handyman", "B) Commercial Airline Pilot", "C) Deep Sea Diving", "D) Space Tourism"], answer: "A) Housekeeping & Handyman", answered: false },
+                    { value: 200, type: "open", q: "What is the policy for prescription delivery requests?", answer: "Verify pharmacy location, confirmation/pickup number, and ensure pharmacy has payment on file before dispatching courier.", answered: false },
+                    { value: 300, type: "mc", q: "How does GoGo ensure vendor safety for home visit services?", options: ["A) Vetting & partner screening", "B) Random street pick", "C) Unverified ads", "D) None"], answer: "A) Vetting & partner screening", answered: false },
+                    { value: 400, type: "open", q: "What safety disclosure must be read prior to booking in-home assistance?", answer: "Ensure member understands vendor policies and confirms someone 18+ is present at the home.", answered: false },
+                    { value: 500, type: "mc", q: "Can members set up recurring weekly home service appointments?", options: ["A) Yes, via client account schedule", "B) No, never", "C) Only on holidays", "D) Only in winter"], answer: "A) Yes, via client account schedule", answered: false }
+                ]
+            },
+            {
+                category: "Member Support",
+                questions: [
+                    { value: 100, type: "mc", q: "How can family members stay informed about a client's active ride?", options: ["A) Automated SMS trip alerts", "B) Smoke signals", "C) Radio broadcast", "D) Letter mail"], answer: "A) Automated SMS trip alerts", answered: false },
+                    { value: 200, type: "open", q: "What steps are required to update a member's primary credit card?", answer: "Access billing tab, verify security questions, input new card details securely without storing CVV in text notes.", answered: false },
+                    { value: 300, type: "mc", q: "Where do operators document special rider notes (e.g., 'Rider needs help with walker')?", options: ["A) Driver Dispatch Notes field", "B) Personal notepad", "C) Trash folder", "D) Public chat"], answer: "A) Driver Dispatch Notes field", answered: false },
+                    { value: 400, type: "open", q: "What is the standard resolution when a driver cancels a trip last minute?", answer: "Immediately re-dispatch nearest available driver at no extra charge to member and call member with updated ETA.", answered: false },
+                    { value: 500, type: "mc", q: "What is the primary goal of the GoGo Operator team during call interactions?", options: ["A) Clear, compassionate & efficient support", "B) Speed run calls in 5 seconds", "C) Transfer every call", "D) Play elevator music"], answer: "A) Clear, compassionate & efficient support", answered: false }
+                ]
+            },
+            {
+                category: "Safety & Emergency",
+                questions: [
+                    { value: 100, type: "mc", q: "What is the first priority when a client sounds disoriented during a ride call?", options: ["A) Verify location & stay on line", "B) Hang up", "C) Put on hold for 10 mins", "D) Ignore"], answer: "A) Verify location & stay on line", answered: false },
+                    { value: 200, type: "open", q: "What is the 'Guardian Alert' system and when is it activated?", answer: "It notifies designated emergency contacts/family when an active trip strays significantly off route or has prolonged delay.", answered: false },
+                    { value: 300, type: "mc", q: "If a driver reports a medical emergency in vehicle, what is the immediate operator action?", options: ["A) Direct driver to pull over & call 911", "B) Schedule a grocery order", "C) Play music", "D) Send an email"], answer: "A) Direct driver to pull over & call 911", answered: false },
+                    { value: 400, type: "open", q: "Name the 3 critical steps during an active trip safety escalation.", answer: "1) Confirm rider safety & location, 2) Contact emergency response / family, 3) Document incident in safety log.", answered: false },
+                    { value: 500, type: "mc", q: "Who handles safety escalations outside of standard business hours?", options: ["A) 24/7 GoGo Safety Response Team", "B) Voicemail box", "C) Nobody", "D) External temp agency"], answer: "A) 24/7 GoGo Safety Response Team", answered: false }
+                ]
+            }
+        ];
+
+        /* ==========================================================================
+           3. APPLICATION STATE
+           ========================================================================== */
+        let currentRole = null; // 'admin' or 'player'
+        let currentDeck = JSON.parse(JSON.stringify(DEFAULT_DECK));
+        let group1Score = 0;
+        let group2Score = 0;
+        let group1Name = "Group 1";
+        let group2Name = "Group 2";
+
+        let buzzersUnlocked = false;
+        let buzzerWinner = null; // 1 or 2 or null
+
+        let activeQuestionLocation = null; // { catIndex, qIndex }
+        let isAnswerRevealed = false;
+
+        /* ==========================================================================
+           4. AUTHENTICATION & ROLE MANAGEMENT
+           ========================================================================== */
+        function loginAsPlayer() {
+            currentRole = 'player';
+            applyRoleUI();
+            document.getElementById('loginModal').classList.add('hidden');
+            playSound('go');
+        }
+
+        function handleAdminLogin(event) {
+            event.preventDefault();
+            const user = document.getElementById('adminUser').value.trim();
+            const pass = document.getElementById('adminPass').value.trim();
+            const errorEl = document.getElementById('loginError');
+
+            if (user === 'gogoki' && pass === 'yestobangs') {
+                errorEl.classList.add('hidden');
+                currentRole = 'admin';
+                applyRoleUI();
+                document.getElementById('loginModal').classList.add('hidden');
+                document.getElementById('adminUser').value = '';
+                document.getElementById('adminPass').value = '';
+                playSound('go');
+            } else {
+                errorEl.classList.remove('hidden');
+                playSound('wrong');
+            }
+        }
+
+        function performLogout() {
+            currentRole = null;
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginError').classList.add('hidden');
+            applyRoleUI();
+            playSound('buzz');
+        }
+
+        function applyRoleUI() {
+            const adminControls = document.getElementById('adminControls');
+            const adminScoreBtns1 = document.getElementById('adminScoreBtns1');
+            const adminScoreBtns2 = document.getElementById('adminScoreBtns2');
+            const roleBadge = document.getElementById('roleBadge');
+            const adminQuestionActions = document.getElementById('adminQuestionActions');
+
+            if (currentRole === 'admin') {
+                adminControls.classList.remove('hidden');
+                adminScoreBtns1.classList.remove('hidden');
+                adminScoreBtns2.classList.remove('hidden');
+                adminQuestionActions.classList.remove('hidden');
+                roleBadge.textContent = '👑 Admin Host';
+                roleBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40';
+            } else {
+                adminControls.classList.add('hidden');
+                adminScoreBtns1.classList.add('hidden');
+                adminScoreBtns2.classList.add('hidden');
+                adminQuestionActions.classList.add('hidden');
+                roleBadge.textContent = '🎮 Player Mode';
+                roleBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-slate-800/80 text-indigo-300 border border-indigo-500/30';
+            }
+            renderBoard();
+        }
+
+        /* ==========================================================================
+           5. RESET GAME & BOARD LOGIC
+           ========================================================================== */
+        function triggerResetConfirmation() {
+            document.getElementById('resetModal').classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetModal').classList.add('hidden');
+        }
+
+        function confirmResetGame() {
+            // 1. Reset Scores
+            group1Score = 0;
+            group2Score = 0;
+            updateScoreDisplay();
+
+            // 2. Reset Questions Answered State
+            currentDeck.forEach(cat => {
+                cat.questions.forEach(q => {
+                    q.answered = false;
+                });
+            });
+
+            // 3. Reset Buzzers
+            resetBuzzers();
+
+            // 4. Close Modal & Re-render Board
+            closeResetModal();
+            renderBoard();
+            playSound('go');
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('jeopardyBoard');
+            board.innerHTML = '';
+
+            // Render Category Headers
+            currentDeck.forEach((cat, cIdx) => {
+                const catHeader = document.createElement('div');
+                catHeader.className = "glass-card p-3 rounded-2xl text-center border-b-2 border-amber-400 flex flex-col justify-center min-h-[70px]";
+                catHeader.innerHTML = `
+                    <span class="text-[10px] uppercase font-extrabold text-amber-400 tracking-wider">Cat ${cIdx + 1}</span>
+                    <h3 class="text-xs sm:text-sm font-black text-white leading-tight">${escapeHtml(cat.category)}</h3>
+                `;
+                board.appendChild(catHeader);
+            });
+
+            // Render 5 Rows of Questions (100 to 500)
+            for (let rIdx = 0; rIdx < 5; rIdx++) {
+                currentDeck.forEach((cat, cIdx) => {
+                    const qData = cat.questions[rIdx];
+                    const tile = document.createElement('button');
+                    
+                    if (qData.answered) {
+                        tile.className = "jeopardy-tile answered glass-card rounded-2xl p-4 flex flex-col items-center justify-center font-black text-xl text-indigo-300/40";
+                        tile.disabled = true;
+                        tile.innerHTML = `<span>$${qData.value}</span><span class="text-[10px] font-normal">DONE</span>`;
+                    } else {
+                        tile.className = "jeopardy-tile glass-card rounded-2xl p-4 flex flex-col items-center justify-center font-black text-xl text-amber-400 hover:text-yellow-200 border border-indigo-500/30 cursor-pointer active:scale-95";
+                        tile.onclick = () => openQuestion(cIdx, rIdx);
+                        tile.innerHTML = `
+                            <span class="gold-gradient-text text-xl sm:text-2xl font-black">$${qData.value}</span>
+                            <span class="text-[9px] text-indigo-200/60 font-semibold uppercase">${qData.type === 'mc' ? 'Multiple Choice' : 'Open Text'}</span>
+                        `;
+                    }
+
+                    board.appendChild(tile);
+                });
+            }
+        }
+
+        /* ==========================================================================
+           6. BUZZER ENGINE & HOTKEYS
+           ========================================================================== */
+        function giveGoSignal() {
+            buzzersUnlocked = true;
+            buzzerWinner = null;
+            updateBuzzerUI();
+            playSound('go');
+        }
+
+        function resetBuzzers() {
+            buzzersUnlocked = false;
+            buzzerWinner = null;
+            updateBuzzerUI();
+        }
+
+        function buzzIn(groupNum) {
+            if (!buzzersUnlocked) {
+                playSound('wrong');
+                return;
+            }
+
+            if (buzzerWinner === null) {
+                buzzerWinner = groupNum;
+                buzzersUnlocked = false; // Lock out second team
+                updateBuzzerUI();
+                playSound('buzz');
+            }
+        }
+
+        function updateBuzzerUI() {
+            const banner = document.getElementById('buzzerBanner');
+            const icon = document.getElementById('buzzerStateIcon');
+            const title = document.getElementById('buzzerStateTitle');
+            const desc = document.getElementById('buzzerStateDesc');
+            
+            const modalIcon = document.getElementById('modalBuzzerIcon');
+            const modalText = document.getElementById('modalBuzzerText');
+
+            const ind1 = document.getElementById('buzzerIndicator1');
+            const ind2 = document.getElementById('buzzerIndicator2');
+            const card1 = document.getElementById('cardGroup1');
+            const card2 = document.getElementById('cardGroup2');
+
+            // Reset highlighted cards & indicators
+            ind1.classList.add('hidden');
+            ind2.classList.add('hidden');
+            card1.classList.remove('ring-4', 'ring-blue-400', 'buzzer-active');
+            card2.classList.remove('ring-4', 'ring-amber-400', 'buzzer-active');
+
+            if (buzzerWinner === 1) {
+                title.textContent = `${group1Name.toUpperCase()} BUZZED FIRST!`;
+                desc.textContent = "Team 1 locked in the answer!";
+                icon.textContent = "🔔";
+                modalIcon.textContent = "🔔";
+                modalText.textContent = `${group1Name} Buzz Winner!`;
+
+                ind1.classList.remove('hidden');
+                card1.classList.add('ring-4', 'ring-blue-400', 'buzzer-active');
+            } else if (buzzerWinner === 2) {
+                title.textContent = `${group2Name.toUpperCase()} BUZZED FIRST!`;
+                desc.textContent = "Team 2 locked in the answer!";
+                icon.textContent = "🔔";
+                modalIcon.textContent = "🔔";
+                modalText.textContent = `${group2Name} Buzz Winner!`;
+
+                ind2.classList.remove('hidden');
+                card2.classList.add('ring-4', 'ring-amber-400', 'buzzer-active');
+            } else if (buzzersUnlocked) {
+                title.textContent = "BUZZERS ACTIVE — BUZZ NOW!";
+                desc.textContent = "Press 1 or A for Group 1 | Press 2 or L for Group 2";
+                icon.textContent = "🟢";
+                modalIcon.textContent = "🟢";
+                modalText.textContent = "Buzzers Ready!";
+            } else {
+                title.textContent = "BUZZERS LOCKED";
+                desc.textContent = "Waiting for Host to trigger Go Signal (Spacebar)";
+                icon.textContent = "🔒";
+                modalIcon.textContent = "🔒";
+                modalText.textContent = "Buzzers Locked";
+            }
+        }
+
+        // Global Keyboard Event Listener
+        document.addEventListener('keydown', function(e) {
+            // Ignore key events inside inputs/textareas
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                return;
+            }
+
+            const key = e.key.toLowerCase();
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                giveGoSignal();
+            } else if (key === '1' || key === 'a') {
+                buzzIn(1);
+            } else if (key === '2' || key === 'l') {
+                buzzIn(2);
+            }
+        });
+
+        /* ==========================================================================
+           7. QUESTION MODAL & SCORE ADJUSTMENT
+           ========================================================================== */
+        function openQuestion(cIdx, qIdx) {
+            activeQuestionLocation = { catIndex: cIdx, qIndex: qIdx };
+            const qData = currentDeck[cIdx].questions[qIdx];
+            isAnswerRevealed = false;
+
+            document.getElementById('qModalCategory').textContent = currentDeck[cIdx].category;
+            document.getElementById('qModalType').textContent = qData.type === 'mc' ? 'Multiple Choice' : 'Open Ended';
+            document.getElementById('qModalValue').textContent = `$${qData.value}`;
+            document.getElementById('qModalQuestion').textContent = qData.q;
+
+            const optsContainer = document.getElementById('qModalOptionsContainer');
+            optsContainer.innerHTML = '';
+
+            if (qData.type === 'mc' && qData.options) {
+                optsContainer.classList.remove('hidden');
+                qData.options.forEach(opt => {
+                    const optCard = document.createElement('div');
+                    optCard.className = "p-3.5 rounded-xl bg-slate-900/70 border border-indigo-500/30 text-sm font-semibold text-indigo-100 flex items-center";
+                    optCard.textContent = opt;
+                    optsContainer.appendChild(optCard);
+                });
+            } else {
+                optsContainer.classList.add('hidden');
+            }
+
+            document.getElementById('qModalAnswerText').textContent = qData.answer;
+            document.getElementById('qModalAnswerBox').classList.add('hidden');
+            document.getElementById('revealBtn').textContent = "👁️ Reveal Answer";
+
+            // Lock buzzers on question open
+            resetBuzzers();
+
+            document.getElementById('questionModal').classList.remove('hidden');
+        }
+
+        function toggleAnswerReveal() {
+            const ansBox = document.getElementById('qModalAnswerBox');
+            const revealBtn = document.getElementById('revealBtn');
+
+            isAnswerRevealed = !isAnswerRevealed;
+
+            if (isAnswerRevealed) {
+                ansBox.classList.remove('hidden');
+                revealBtn.textContent = "🙈 Hide Answer";
+                playSound('correct');
+            } else {
+                ansBox.classList.add('hidden');
+                revealBtn.textContent = "👁️ Reveal Answer";
+            }
+        }
+
+        function awardQuestionPoints(groupNum) {
+            if (!activeQuestionLocation) return;
+            const { catIndex, qIndex } = activeQuestionLocation;
+            const pts = currentDeck[catIndex].questions[qIndex].value;
+
+            adjustScore(groupNum, pts);
+            closeQuestionModal(true);
+        }
+
+        function closeQuestionModal(markAnswered = false) {
+            if (markAnswered && activeQuestionLocation) {
+                const { catIndex, qIndex } = activeQuestionLocation;
+                currentDeck[catIndex].questions[qIndex].answered = true;
+            }
+            document.getElementById('questionModal').classList.add('hidden');
+            activeQuestionLocation = null;
+            renderBoard();
+        }
+
+        function adjustScore(groupNum, delta) {
+            if (groupNum === 1) {
+                group1Score += delta;
+            } else {
+                group2Score += delta;
+            }
+            if (delta > 0) playSound('correct');
+            else playSound('wrong');
+
+            updateScoreDisplay();
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('group1Score').textContent = group1Score;
+            document.getElementById('group2Score').textContent = group2Score;
+        }
+
+        function updateGroupNames() {
+            group1Name = document.getElementById('group1Name').value || "Group 1";
+            group2Name = document.getElementById('group2Name').value || "Group 2";
+            updateBuzzerUI();
+        }
+
+        /* ==========================================================================
+           8. DECK EDITOR MODAL LOGIC
+           ========================================================================== */
+        function openDeckEditor() {
+            const container = document.getElementById('deckEditorContainer');
+            container.innerHTML = '';
+
+            currentDeck.forEach((cat, cIdx) => {
+                const catBlock = document.createElement('div');
+                catBlock.className = "glass-card p-4 rounded-2xl border border-indigo-500/30 space-y-4";
+                
+                catBlock.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-black text-amber-400 uppercase">Category ${cIdx + 1} Name:</span>
+                        <input type="text" id="editCat_${cIdx}" value="${escapeHtml(cat.category)}"
+                            class="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-indigo-500/40 text-white text-sm font-bold">
+                    </div>
+                `;
+
+                const qList = document.createElement('div');
+                qList.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+
+                cat.questions.forEach((q, qIdx) => {
+                    const qItem = document.createElement('div');
+                    qItem.className = "p-3 rounded-xl bg-slate-900/60 border border-indigo-500/20 text-xs space-y-2";
+                    qItem.innerHTML = `
+                        <div class="flex justify-between items-center text-amber-300 font-bold">
+                            <span>$${q.value} Question</span>
+                            <select id="editType_${cIdx}_${qIdx}" class="bg-slate-800 text-white rounded px-2 py-0.5">
+                                <option value="mc" ${q.type === 'mc' ? 'selected' : ''}>Multiple Choice</option>
+                                <option value="open" ${q.type === 'open' ? 'selected' : ''}>Open Ended</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-indigo-300 uppercase">Question Text:</label>
+                            <input type="text" id="editQ_${cIdx}_${qIdx}" value="${escapeHtml(q.q)}" class="w-full px-2 py-1 rounded bg-slate-950 border border-indigo-500/30 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-indigo-300 uppercase">Correct Answer:</label>
+                            <input type="text" id="editAns_${cIdx}_${qIdx}" value="${escapeHtml(q.answer)}" class="w-full px-2 py-1 rounded bg-slate-950 border border-indigo-500/30 text-emerald-300">
+                        </div>
+                    `;
+                    qList.appendChild(qItem);
+                });
+
+                catBlock.appendChild(qList);
+                container.appendChild(catBlock);
+            });
+
+            document.getElementById('deckEditorModal').classList.remove('hidden');
+        }
+
+        function closeDeckEditor() {
+            document.getElementById('deckEditorModal').classList.add('hidden');
+        }
+
+        function saveDeckChanges() {
+            currentDeck.forEach((cat, cIdx) => {
+                const catInput = document.getElementById(`editCat_${cIdx}`);
+                if (catInput) cat.category = catInput.value;
+
+                cat.questions.forEach((q, qIdx) => {
+                    const typeInput = document.getElementById(`editType_${cIdx}_${qIdx}`);
+                    const qInput = document.getElementById(`editQ_${cIdx}_${qIdx}`);
+                    const ansInput = document.getElementById(`editAns_${cIdx}_${qIdx}`);
+
+                    if (typeInput) q.type = typeInput.value;
+                    if (qInput) q.q = qInput.value;
+                    if (ansInput) q.answer = ansInput.value;
+                });
+            });
+
+            closeDeckEditor();
+            renderBoard();
+            playSound('go');
+        }
+
+        function resetDefaultDeck() {
+            currentDeck = JSON.parse(JSON.stringify(DEFAULT_DECK));
+            openDeckEditor();
+            renderBoard();
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        /* ==========================================================================
+           9. INITIALIZATION
+           ========================================================================== */
+        window.onload = function() {
+            renderBoard();
+            updateScoreDisplay();
+            updateBuzzerUI();
+        };
+    </script>
+</body>
+</html>
