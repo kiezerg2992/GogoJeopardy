@@ -53,6 +53,41 @@
     .pulse-urgent {
       animation: pulse-ring 0.8s infinite ease-in-out;
     }
+
+    /* ===== Duck race scene ===== */
+    .duck-scene { position: relative; overflow: hidden; background: linear-gradient(180deg, #5f9a45 0%, #6faa4e 12%, #86bd60 19%, #9fd8f7 20.2%, #55aef0 40%, #3a92e0 75%, #2f82d3 100%); }
+    .ds-grass { position: absolute; left: 0; right: 0; top: 0; height: 20%; background:
+      radial-gradient(ellipse at 12% 110%, #3f7a34 0 38%, transparent 62%), radial-gradient(ellipse at 38% 120%, #4c8a3a 0 40%, transparent 65%),
+      radial-gradient(ellipse at 66% 110%, #3b7430 0 38%, transparent 62%), radial-gradient(ellipse at 92% 120%, #56933f 0 40%, transparent 65%),
+      linear-gradient(180deg, #2d5f2a, #5f9a45); filter: blur(1.5px); }
+    .ds-waves { position: absolute; left: 0; right: 0; top: 20%; bottom: 0; background:
+      repeating-linear-gradient(100deg, rgba(255,255,255,.09) 0 36px, rgba(255,255,255,0) 36px 120px),
+      repeating-linear-gradient(80deg, rgba(255,255,255,.05) 0 22px, rgba(255,255,255,0) 22px 90px);
+      background-size: 240px 100%, 180px 100%; animation: dsDrift 9s linear infinite; }
+    @keyframes dsDrift { from { background-position: 0 0, 0 0; } to { background-position: -240px 0, -180px 0; } }
+    .ds-cloud { position: absolute; height: 34px; border-radius: 999px; background: rgba(255,255,255,.28); filter: blur(7px); animation: dsCloud 60s linear infinite; }
+    @keyframes dsCloud { from { transform: translateX(-30px); } 50% { transform: translateX(60px); } to { transform: translateX(-30px); } }
+    .ds-finish { position: absolute; top: 20%; bottom: 0; left: 86%; width: 24px; transform: skewX(-12deg);
+      background: repeating-conic-gradient(#0f172a 0 25%, #f8fafc 0 50%) 0 0 / 24px 24px; box-shadow: 0 0 18px rgba(0,0,0,.35); }
+    .ds-finish span { position: absolute; top: -22px; left: 50%; transform: translateX(-50%) skewX(12deg); font-size: 11px; font-weight: 900; letter-spacing: .12em; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+    .ds-pill { position: absolute; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 999px; color: #fff; font-weight: 800; background: rgba(110,120,90,.82); border: 2px solid rgba(255,255,255,.35); backdrop-filter: blur(4px); }
+    .ds-clockpill { top: 12px; left: 50%; transform: translateX(-50%); font-size: 26px; padding: 4px 22px; font-variant-numeric: tabular-nums; }
+    .ds-needpill { top: 14px; left: 14px; font-size: 13px; background: rgba(15,23,42,.6); }
+    .ds-cd { position: absolute; z-index: 40; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(48px, 12vw, 150px); font-weight: 900; color: #fff; text-shadow: 0 6px 30px rgba(0,0,0,.45); pointer-events: none; }
+    .ds-cd.hidden { display: none; }
+    .ds-ducks { position: absolute; inset: 0; }
+    .ds-duck { position: absolute; transition: left .95s cubic-bezier(.25,.8,.3,1), top .5s ease; will-change: left; }
+    .ds-bob { width: 100%; height: 100%; animation: dsBob 1.7s ease-in-out infinite; }
+    @keyframes dsBob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-3px) rotate(1.5deg); } }
+    .ds-tag { position: absolute; bottom: 92%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: var(--fs, 12px); font-weight: 700; line-height: 1; color: #1e293b; padding: 3px 8px; border-radius: 6px; background: rgba(226,236,250,.88); border: 1px solid rgba(255,255,255,.7); max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+    .ds-duck.fin .ds-tag { background: rgba(253,224,71,.95); }
+    .ds-duck.dq { opacity: .5; filter: grayscale(1); }
+    .ds-duck.dq .ds-bob { animation: dsSink 3s ease-in-out infinite; }
+    @keyframes dsSink { 0%, 100% { transform: translateY(4px) rotate(8deg); } 50% { transform: translateY(8px) rotate(12deg); } }
+    .ds-final { position: absolute; z-index: 30; left: 50%; top: 52%; transform: translate(-50%, -50%); width: min(92%, 820px); max-height: 86%; overflow-y: auto; text-align: center; padding: 24px; border-radius: 28px; background: rgba(2,6,23,.88); border: 2px solid rgba(251,191,36,.5); backdrop-filter: blur(6px); }
+    .ds-final.hidden { display: none; }
+    .ds-hop { animation: dsHop .45s ease-out; }
+    @keyframes dsHop { 0% { transform: translateY(0); } 40% { transform: translateY(-9px); } 100% { transform: translateY(0); } }
   </style>
 </head>
 <body class="h-full bg-slate-950 text-slate-100 font-sans antialiased select-none overflow-x-hidden">
@@ -404,8 +439,8 @@
           <div class="text-xs text-slate-400">Two teams buzz in and pick tiles. Maximum 2 players.</div>
         </button>
         <button onclick="setMode('race')" class="text-left p-5 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:border-cyan-500/60 transition space-y-1">
-          <div class="text-lg font-black text-cyan-400">Tile Race</div>
-          <div class="text-xs text-slate-400">Everyone races through multiple-choice questions. Up to 60 players.</div>
+          <div class="text-lg font-black text-cyan-400">Duck Race</div>
+          <div class="text-xs text-slate-400">Everyone races their own duck - no waiting. Answer questions, first across the finish line wins. Up to 60 players.</div>
         </button>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
@@ -427,7 +462,7 @@
           <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">Locked</span>
         </div>
         <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex items-center justify-between opacity-70">
-          <div class="text-left"><div class="font-bold text-slate-300">Tile Race</div><div class="text-xs text-slate-500">Up to 60 players</div></div>
+          <div class="text-left"><div class="font-bold text-slate-300">Duck Race</div><div class="text-xs text-slate-500">Up to 60 players</div></div>
           <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">Locked</span>
         </div>
       </div>
@@ -445,12 +480,12 @@
     </div>
   </div>
 
-  <!-- TILE RACE SCREEN -->
+  <!-- DUCK RACE SCREEN -->
   <div id="raceView" class="fixed inset-0 z-[45] bg-slate-950 flex flex-col hidden">
     <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-black flex items-center justify-center text-sm">TR</div>
-        <div><div class="text-sm font-black text-white">Tile Race</div><div id="raceSub" class="text-xs text-slate-400"></div></div>
+        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-black flex items-center justify-center text-sm">DR</div>
+        <div><div class="text-sm font-black text-white">Duck Race</div><div id="raceSub" class="text-xs text-slate-400"></div></div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <div class="sync-pill text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 font-semibold">Sync: connecting...</div>
@@ -460,6 +495,7 @@
         <button onclick="logoutRole()" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 rounded-lg text-xs border border-slate-700">Leave</button>
       </div>
     </div>
+    <div id="raceHostScene" class="hidden w-full shrink-0" style="height:min(42vh,380px)"></div>
     <div id="raceBody" class="flex-1 overflow-y-auto p-4 md:p-6 max-w-6xl w-full mx-auto"></div>
   </div>
 
@@ -474,8 +510,8 @@
     <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-5xl max-h-[94vh] flex flex-col shadow-2xl">
       <div class="p-5 border-b border-slate-800 flex items-start justify-between gap-3">
         <div>
-          <h2 class="text-lg font-black text-white">Tile Race Questions</h2>
-          <p class="text-xs text-slate-400 mt-1">Multiple choice only, up to 30 questions. Tick the circle next to the correct answer. Leave a choice blank to use fewer choices (minimum 2).</p>
+          <h2 class="text-lg font-black text-white">Duck Race Questions</h2>
+          <p class="text-xs text-slate-400 mt-1">Multiple choice only, up to 30 questions (every player gets all of them in a random order). Tick the circle next to the correct answer. Leave a choice blank to use fewer choices (minimum 2).</p>
         </div>
         <button onclick="closeRaceEditor()" class="text-slate-400 hover:text-white text-2xl leading-none px-2" aria-label="Close">&times;</button>
       </div>
@@ -1616,9 +1652,8 @@
       else if (m.type === 'HELLO' && isHost) scheduleHello();
       else if (m.type === 'SEAT' && isHost) hostSeat(m);
       else if (m.type === 'RJOIN' && isHost) raceJoin(m);
-      else if (m.type === 'RA' && isHost) raceAnswer(m);
-      else if (m.type === 'RQ' && !isHost) racePlayerQuestion(m);
-      else if (m.type === 'RR' && !isHost) racePlayerResults(m);
+      else if (m.type === 'RP' && isHost) raceProgress(m);
+      else if (m.type === 'RD' && !isHost) racePlayerDeck(m);
       else if (m.type === 'BUZZ' && isHost) hostBuzz(m.team);
       else if (m.type === 'PICK' && isHost) { if (m.team === gameState.pickTeam && !gameState.activeTile && !gameState.answeredTiles[m.catIdx + '_' + m.qIdx]) hostOpenTile(m.catIdx, m.qIdx); }
       else if (m.type === 'ANSWER' && isHost) hostAnswer(m.team, m.idx);
@@ -1669,7 +1704,7 @@
         helloTimer = null;
         if (modeOf() === 'jeopardy') broadcastBoard(false);
         broadcastState();
-        resendRaceQuestion();
+        resendRaceDeck();
       }, 1200);
     }
 
@@ -1717,11 +1752,8 @@
       show('raceView', !!r && m === 'race');
       document.querySelectorAll('.race-host-only').forEach(b => b.classList.toggle('hidden', !host));
       if (isPlayer && m === 'jeopardy' && currentRole === 'player') renderSeats();
-      if (isPlayer && m === 'race') {
-        if ((gameState.race || {}).phase === 'idle') Object.assign(myRace, { q: null, answered: null, result: null, score: 0, correct: 0, expired: false });
-        ensureRaceJoin();
-      }
-      if (r && m === 'race') renderRace();
+      if (isPlayer && m === 'race') racePlayerSync();
+      else if (r && m === 'race') renderRace();
       renderTV();
     }
 
@@ -1764,313 +1796,515 @@
       updateMainBoardStatus();
     }
 
-    /* ================= TILE RACE ================= */
-    function defaultRaceQs() {
-      const out = [];
-      DEFAULT_BOARD_DATA.forEach(c => c.questions.forEach(q => {
-        if (q.type === 'multiple') out.push({ prompt: q.prompt, choices: q.choices.slice(), correct: q.correct || 0, timer: q.timer || 20 });
-      }));
-      return out.slice(0, 30);
-    }
-    function loadRaceQs() {
-      try { const r = JSON.parse(localStorage.getItem('gogo_race_questions')); if (Array.isArray(r) && r.length) return r; } catch (e) {}
-      return defaultRaceQs();
-    }
-    let raceQs = loadRaceQs();
-    let raceH = { players: {}, answers: {}, qi: -1, phase: 'idle', endsAt: 0, tEnd: null };
-    let myRace = { q: null, startedAt: 0, el: 0, answered: null, result: null, score: 0, correct: 0, gained: 0, joinSent: 0, expired: false };
+/* ================= DUCK RACE ================= */
+const DUCK_COLORS = ['#facc15', '#fb7185', '#60a5fa', '#4ade80', '#fb923c', '#c084fc', '#2dd4bf', '#f472b6', '#a3e635', '#38bdf8', '#f87171', '#fde047'];
+function duckSVG(c) {
+  return `<svg viewBox="0 0 124 90" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;overflow:visible">
+    <ellipse cx="58" cy="82" rx="54" ry="7" fill="#fff" opacity=".6"/><ellipse cx="58" cy="85" rx="38" ry="4" fill="#fff" opacity=".45"/>
+    <path d="M6 38 C16 36 24 44 28 56 L12 58 C8 52 6 46 6 38Z" fill="${c}"/>
+    <path d="M10 56 C10 74 30 82 60 82 C90 82 106 72 106 54 C106 46 98 42 90 44 C74 48 54 48 38 44 C24 42 10 44 10 56Z" fill="${c}"/>
+    <circle cx="88" cy="32" r="21" fill="${c}"/>
+    <path d="M104 30 C114 26 123 31 119 37 C115 42 107 42 102 39Z" fill="#fb923c"/>
+    <circle cx="95" cy="27" r="3.4" fill="#111827"/><circle cx="96.2" cy="25.8" r="1.1" fill="#fff"/>
+    <path d="M30 56 C40 46 62 48 72 60 C62 72 42 70 30 56Z" fill="#000" opacity=".14"/>
+    <path d="M78 15 C84 10 93 11 97 17" stroke="#fff" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/></svg>`;
+}
+function fmtMs(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+function medal(p) { return p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : '#' + p; }
 
-    function syncRacePublic() {
-      gameState.race = { phase: raceH.phase, qi: raceH.qi, n: raceQs.length, players: Object.keys(raceH.players).length, ids: Object.keys(raceH.players) };
-    }
-    function renderRaceSoon() {
-      if (raceRT) return;
-      raceRT = setTimeout(() => { raceRT = null; renderRace(); renderTV(); }, 300);
-    }
-    function raceRanked() {
-      return Object.keys(raceH.players).map(id => Object.assign({ pid: id }, raceH.players[id]))
-        .sort((a, b) => b.score - a.score || b.correct - a.correct || a.name.localeCompare(b.name));
-    }
+function defaultRaceQs() {
+  const out = [];
+  DEFAULT_BOARD_DATA.forEach(c => c.questions.forEach(q => {
+    if (q.type === 'multiple') out.push({ prompt: q.prompt, choices: q.choices.slice(), correct: q.correct || 0, timer: q.timer || 20 });
+  }));
+  return out.slice(0, 30);
+}
+function loadRaceQs() {
+  try { const r = JSON.parse(localStorage.getItem('gogo_race_questions')); if (Array.isArray(r) && r.length) return r; } catch (e) {}
+  return defaultRaceQs();
+}
+let raceQs = loadRaceQs();
+let racePct = (() => { const v = parseInt(localStorage.getItem('gogo_race_pct')); return v >= 10 && v <= 100 ? v : 60; })();
+function raceNeed(n, pct) { return Math.max(1, Math.ceil(n * pct / 100)); }
 
-    // ---- host side ----
-    function raceJoin(m) {
-      if (modeOf() !== 'race' || !m.pid) return;
-      const name = String(m.name || 'Player').slice(0, 20);
-      const p = raceH.players[m.pid];
-      if (p) { p.name = name; return; }
-      if (Object.keys(raceH.players).length >= RACE_CAP) return;
-      raceH.players[m.pid] = { name, score: 0, correct: 0, lastPts: 0 };
-      scheduleState();
-      renderRaceSoon();
-    }
-    function raceStart() {
-      if (currentRole !== 'host' || raceH.phase !== 'idle') return;
-      Object.values(raceH.players).forEach(p => { p.score = 0; p.correct = 0; p.lastPts = 0; });
-      raceH.qi = -1;
-      raceNext();
-    }
-    function raceNext() {
-      if (currentRole !== 'host' || raceH.phase === 'question') return;
-      raceH.qi++;
-      if (raceH.qi >= raceQs.length) { raceFinish(); return; }
-      const q = raceQs[raceH.qi], dur = q.timer || 20;
-      raceH.answers = {};
-      raceH.phase = 'question';
-      raceH.endsAt = Date.now() + dur * 1000;
-      clearTimeout(raceH.tEnd);
-      raceH.tEnd = setTimeout(raceEnd, dur * 1000 + 1500);
-      playSound('go');
-      sendQuestion(0);
-      broadcastState();
-    }
-    function sendQuestion(el) {
-      const q = raceQs[raceH.qi];
-      sendMsg({ type: 'RQ', i: raceH.qi, n: raceQs.length, prompt: q.prompt, choices: q.choices, dur: q.timer || 20, el });
-    }
-    function resendRaceQuestion() {
-      if (currentRole !== 'host' || raceH.phase !== 'question' || Date.now() >= raceH.endsAt) return;
-      const dur = (raceQs[raceH.qi].timer || 20) * 1000;
-      sendQuestion(Math.max(0, dur - (raceH.endsAt - Date.now())));
-    }
-    function raceAnswer(m) {
-      const p = raceH.players[m.pid];
-      if (!p || raceH.phase !== 'question' || m.i !== raceH.qi || raceH.answers[m.pid] || Date.now() > raceH.endsAt + 2500) return;
-      const dur = (raceQs[raceH.qi].timer || 20) * 1000;
-      raceH.answers[m.pid] = { a: m.a, ms: Math.max(0, Math.min(dur, parseInt(m.ms) || dur)) };
-      if (Object.keys(raceH.answers).length >= Object.keys(raceH.players).length) raceEnd(); else renderRaceSoon();
-    }
-    function raceResultsMsg(final) {
-      const sc = {};
-      Object.keys(raceH.players).forEach(id => { const p = raceH.players[id]; sc[id] = [p.score, p.correct]; });
-      const q = raceQs[Math.min(Math.max(raceH.qi, 0), raceQs.length - 1)];
-      return { type: 'RR', i: Math.min(Math.max(raceH.qi, 0), raceQs.length - 1), n: raceQs.length, correct: q.correct, sc, final: !!final,
-        top: raceRanked().slice(0, 5).map(p => [p.name, p.score, p.correct]) };
-    }
-    function raceEnd() {
-      if (currentRole !== 'host' || raceH.phase !== 'question') return;
-      clearTimeout(raceH.tEnd);
-      const q = raceQs[raceH.qi], dur = (q.timer || 20) * 1000;
-      Object.keys(raceH.players).forEach(id => {
-        const p = raceH.players[id], a = raceH.answers[id];
-        p.lastPts = 0;
-        if (a && a.a === q.correct) { p.lastPts = 100 + Math.round(100 * Math.max(0, 1 - a.ms / dur)); p.score += p.lastPts; p.correct++; }
-      });
-      raceH.phase = 'results';
-      sendMsg(raceResultsMsg(false));
-      playSound('correct');
-      broadcastState();
-    }
-    function raceFinish() {
-      clearTimeout(raceH.tEnd);
-      raceH.phase = 'final';
-      sendMsg(raceResultsMsg(true));
-      broadcastState();
-    }
-    function raceReset() {
-      if (currentRole !== 'host') return;
-      clearTimeout(raceH.tEnd);
-      Object.values(raceH.players).forEach(p => { p.score = 0; p.correct = 0; p.lastPts = 0; });
-      raceH.phase = 'idle'; raceH.qi = -1; raceH.answers = {};
-      broadcastState();
-    }
+// host-side truth
+let raceH = { players: {}, rid: '', phase: 'idle', t0: 0, tEndAt: 0, cdEnd: 0, placeN: 0, n: 0, need: 0, tGo: null, tState: null, lastCd: 0 };
+// player-side truth
+let raceJoinSent = 0, raceDeckBuf = null;
+function blankMe() { return { rid: '', qs: null, order: [], a: 0, c: 0, w: 0, n: 0, need: 0, st: 'wait', started: false, t0: 0, endAt: 0, qStart: 0, picked: null, flash: null, locked: false, lastSend: 0, tSend: null, tNext: null, resends: 0, lastNeed: 0 }; }
+let myRace = blankMe();
+const ME_KEY = 'gogo_race_me';
 
-    // ---- player side ----
-    function ensureRaceJoin() {
-      const ids = (gameState.race || {}).ids || [];
-      if (ids.includes(myPid) || ids.length >= RACE_CAP || Date.now() - myRace.joinSent < 3000) return;
-      myRace.joinSent = Date.now();
-      sendMsg({ type: 'RJOIN', pid: myPid, name: myName });
-    }
-    function racePlayerQuestion(m) {
-      if (myRace.q && myRace.q.i === m.i) return;
-      myRace.q = { i: m.i, n: m.n, prompt: m.prompt, choices: m.choices, dur: m.dur };
-      myRace.startedAt = Date.now(); myRace.el = m.el || 0;
-      myRace.answered = null; myRace.expired = false; myRace.result = null;
-      if (currentRole && modeOf() === 'race') renderRace();
-    }
-    function racePlayerResults(m) {
-      if (myRace.result && myRace.result.i === m.i && myRace.result.final === m.final) return;
-      const mine = m.sc[myPid];
-      myRace.gained = mine ? mine[0] - myRace.score : 0;
-      if (mine) { myRace.score = mine[0]; myRace.correct = mine[1]; }
-      myRace.result = m;
-      if (currentRole && modeOf() === 'race') renderRace();
-    }
-    function raceChoose(i) {
-      const q = myRace.q;
-      if (!q || myRace.answered !== null || myRace.expired) return;
-      const ms = myRace.el + (Date.now() - myRace.startedAt);
-      if (ms > q.dur * 1000) return;
-      myRace.answered = i;
-      sendMsg({ type: 'RA', pid: myPid, i: q.i, a: i, ms });
-      renderRace();
-    }
+function syncRacePublic() {
+  const ids = Object.keys(raceH.players), idle = raceH.phase === 'idle';
+  const n = idle ? raceQs.length : raceH.n;
+  const fin = ids.filter(id => raceH.players[id].st === 'fin').sort((a, b) => raceH.players[a].place - raceH.players[b].place);
+  gameState.race = { phase: raceH.phase, rid: raceH.rid, n, need: idle ? raceNeed(n, racePct) : raceH.need, pct: racePct, players: ids.length, ids, fin };
+  if (raceH.phase === 'final') gameState.race.top = raceRanked().slice(0, 10).map(p => [p.name, p.st === 'fin' ? p.place : 0, p.c, Math.round(p.t / 100) / 10]);
+}
+function renderRaceSoon() {
+  if (raceRT) return;
+  raceRT = setTimeout(() => { raceRT = null; renderRace(); renderTV(); }, 250);
+}
+function raceStateSoon() {
+  if (raceH.tState) return;
+  raceH.tState = setTimeout(() => { raceH.tState = null; broadcastState(); }, 800);
+}
+function raceRanked() {
+  const g = p => p.st === 'fin' ? 0 : p.st === 'dq' ? 2 : 1;
+  return Object.keys(raceH.players).map(id => Object.assign({ pid: id }, raceH.players[id]))
+    .sort((a, b) => g(a) - g(b) || (a.st === 'fin' ? a.place - b.place : b.c - a.c || a.w - b.w || a.name.localeCompare(b.name)));
+}
 
-    function raceTick() {
-      if (modeOf() !== 'race' || !currentRole) return;
-      if (currentRole === 'host') {
-        const el = document.getElementById('raceCountdown');
-        if (el && raceH.phase === 'question') el.innerText = Math.max(0, Math.ceil((raceH.endsAt - Date.now()) / 1000)) + 's';
-      } else if (myRace.q && (gameState.race || {}).phase === 'question' && myRace.q.i === gameState.race.qi) {
-        const total = myRace.q.dur * 1000, left = Math.max(0, total - (myRace.el + Date.now() - myRace.startedAt));
-        const bar = document.getElementById('raceBar'), secs = document.getElementById('raceSecs');
-        if (bar) bar.style.width = (100 * left / total) + '%';
-        if (secs) secs.innerText = Math.ceil(left / 1000) + 's';
-        if (left <= 0 && myRace.answered === null && !myRace.expired) { myRace.expired = true; renderRace(); }
-      }
-    }
-    setInterval(raceTick, 250);
+// ---- host side ----
+function raceJoin(m) {
+  if (modeOf() !== 'race' || !m.pid) return;
+  const name = String(m.name || 'Player').slice(0, 20);
+  const p = raceH.players[m.pid];
+  if (p) { p.name = name; return; }
+  if (raceH.phase !== 'idle' || Object.keys(raceH.players).length >= RACE_CAP) return;
+  raceH.players[m.pid] = { name, ci: Object.keys(raceH.players).length, a: 0, c: 0, w: 0, st: 'idle', place: 0, t: 0 };
+  scheduleState();
+  renderRaceSoon();
+}
+function raceSetPct(v) {
+  racePct = Math.max(10, Math.min(100, parseInt(v) || 60));
+  try { localStorage.setItem('gogo_race_pct', String(racePct)); } catch (e) {}
+  broadcastState();
+}
+function raceStart() {
+  if (currentRole !== 'host' || raceH.phase !== 'idle') return;
+  const ids = Object.keys(raceH.players);
+  if (!ids.length || raceQs.length < 2) return;
+  raceH.rid = 'r' + Date.now().toString(36);
+  raceH.n = raceQs.length; raceH.need = raceNeed(raceH.n, racePct); raceH.placeN = 0;
+  ids.forEach(id => Object.assign(raceH.players[id], { a: 0, c: 0, w: 0, st: 'run', place: 0, t: 0 }));
+  raceH.phase = 'countdown'; raceH.cdEnd = Date.now() + 4000; raceH.lastCd = 0;
+  sendRaceDeck();
+  broadcastState();
+  clearTimeout(raceH.tGo);
+  raceH.tGo = setTimeout(raceGo, 4000);
+}
+function raceGo() {
+  if (raceH.phase !== 'countdown') return;
+  raceH.phase = 'running'; raceH.t0 = Date.now();
+  playSound('go');
+  broadcastState();
+}
+// The whole question deck is sent once (in small chunks) so players never wait on the host between questions.
+function sendRaceDeck() {
+  const qs = raceQs.map(q => ({ p: q.prompt, c: q.choices, a: q.correct, t: q.timer || 20 }));
+  const chunks = []; let cur = [], size = 0;
+  qs.forEach(q => {
+    const s = JSON.stringify(q).length;
+    if (cur.length && size + s > 2400) { chunks.push(cur); cur = []; size = 0; }
+    cur.push(q); size += s;
+  });
+  if (cur.length) chunks.push(cur);
+  chunks.forEach((c, k) => sendMsg({ type: 'RD', rid: raceH.rid, k, kn: chunks.length, n: qs.length, need: raceH.need, qs: c }));
+}
+function resendRaceDeck() {
+  if (currentRole !== 'host' || (raceH.phase !== 'countdown' && raceH.phase !== 'running')) return;
+  sendRaceDeck();
+}
+function raceProgress(m) {
+  const p = raceH.players[m.pid];
+  if (!p || m.rid !== raceH.rid || raceH.phase !== 'running' || p.st !== 'run') return;
+  const n = raceH.n, need = raceH.need;
+  const a = Math.max(p.a, Math.min(n, parseInt(m.a) || 0));
+  const c = Math.max(p.c, Math.min(a, parseInt(m.c) || 0));
+  p.a = a; p.c = c; p.w = a - c;
+  let changed = false;
+  if (c >= need) { p.st = 'fin'; p.place = ++raceH.placeN; p.t = Date.now() - raceH.t0; changed = true; playSound(p.place === 1 ? 'correct' : 'go'); }
+  else if (n - a < need - c) { p.st = 'dq'; p.t = Date.now() - raceH.t0; changed = true; }
+  if (changed) {
+    if (Object.values(raceH.players).every(x => x.st !== 'run')) { raceFinish(); return; }
+    raceStateSoon();
+  }
+  renderRaceSoon();
+}
+function raceFinish() {
+  if (currentRole !== 'host' || (raceH.phase !== 'running' && raceH.phase !== 'countdown')) return;
+  clearTimeout(raceH.tGo);
+  Object.values(raceH.players).forEach(p => { if (p.st === 'run') { p.st = 'dq'; p.t = Date.now() - raceH.t0; } });
+  raceH.phase = 'final'; raceH.tEndAt = Date.now();
+  playSound('correct');
+  broadcastState();
+}
+function raceReset() {
+  if (currentRole !== 'host') return;
+  clearTimeout(raceH.tGo);
+  Object.values(raceH.players).forEach(p => Object.assign(p, { a: 0, c: 0, w: 0, st: 'idle', place: 0, t: 0 }));
+  raceH.phase = 'idle'; raceH.rid = ''; raceH.placeN = 0;
+  broadcastState();
+}
 
-    function renderRace() {
-      if (!currentRole || modeOf() !== 'race') return;
-      document.getElementById('raceSub').innerText = currentRole === 'host'
-        ? `Host - ${Object.keys(raceH.players).length} / ${RACE_CAP} players` : `Player - ${myName}`;
-      document.getElementById('raceBody').innerHTML = currentRole === 'host' ? raceHostHTML() : racePlayerHTML();
-      raceTick();
+// ---- player side ----
+function ensureRaceJoin() {
+  const r = gameState.race || {}, ids = r.ids || [];
+  if (r.phase !== 'idle' || ids.includes(myPid) || ids.length >= RACE_CAP || Date.now() - raceJoinSent < 3000) return;
+  raceJoinSent = Date.now();
+  sendMsg({ type: 'RJOIN', pid: myPid, name: myName });
+}
+function saveMe() {
+  try { sessionStorage.setItem(ME_KEY, JSON.stringify({ rid: myRace.rid, order: myRace.order, a: myRace.a, c: myRace.c, w: myRace.w, st: myRace.st, t0: myRace.t0, endAt: myRace.endAt, started: myRace.started })); } catch (e) {}
+}
+function restoreMe() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(ME_KEY));
+    if (s && s.rid === myRace.rid && Array.isArray(s.order)) {
+      Object.assign(myRace, { order: s.order, a: s.a, c: s.c, w: s.w, st: s.st, t0: s.t0, endAt: s.endAt, started: !!s.started, qStart: Date.now() });
     }
+  } catch (e) {}
+}
+function racePlayerDeck(m) {
+  if (!raceDeckBuf || raceDeckBuf.rid !== m.rid) raceDeckBuf = { rid: m.rid, kn: m.kn, parts: {}, n: m.n, need: m.need, qs: null };
+  raceDeckBuf.parts[m.k] = m.qs;
+  if (Object.keys(raceDeckBuf.parts).length >= raceDeckBuf.kn && !raceDeckBuf.qs) {
+    let all = []; for (let k = 0; k < raceDeckBuf.kn; k++) all = all.concat(raceDeckBuf.parts[k] || []);
+    raceDeckBuf.qs = all;
+  }
+  if (currentRole && currentRole !== 'host' && modeOf() === 'race') racePlayerSync();
+}
+function racePlayerSync() {
+  const r = gameState.race || {}, ph = r.phase || 'idle';
+  if (ph === 'idle') {
+    if (myRace.rid) { myRace = blankMe(); try { sessionStorage.removeItem(ME_KEY); } catch (e) {} }
+    ensureRaceJoin(); renderRace(); return;
+  }
+  if (r.rid && r.rid !== myRace.rid) { myRace = blankMe(); myRace.rid = r.rid; restoreMe(); }
+  myRace.n = r.n; myRace.need = r.need;
+  if (!myRace.qs && raceDeckBuf && raceDeckBuf.rid === myRace.rid && raceDeckBuf.qs) myRace.qs = raceDeckBuf.qs;
+  const member = (r.ids || []).includes(myPid);
+  if (ph === 'running' && member && myRace.qs && !myRace.started) {
+    const idx = [...Array(myRace.qs.length).keys()];
+    for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    Object.assign(myRace, { order: idx, a: 0, c: 0, w: 0, st: 'run', started: true, t0: Date.now(), qStart: Date.now(), locked: false });
+    saveMe();
+  }
+  renderRace();
+}
+function curQ() {
+  const i = myRace.locked ? myRace.a - 1 : myRace.a;
+  return myRace.qs ? myRace.qs[myRace.order[i]] : null;
+}
+function raceChoose(i) {
+  if (!myRace.started || myRace.st !== 'run' || myRace.locked || (gameState.race || {}).phase !== 'running') return;
+  resolveAnswer(i);
+}
+function resolveAnswer(pick) {
+  const q = curQ(); if (!q) return;
+  const ok = pick === q.a;
+  myRace.picked = pick; myRace.flash = ok ? 'ok' : pick < 0 ? 'time' : 'bad';
+  myRace.a++; if (ok) myRace.c++; else myRace.w++;
+  myRace.locked = true;
+  playSound(ok ? 'go' : 'wrong');
+  const n = myRace.n, need = myRace.need;
+  if (myRace.c >= need) { myRace.st = 'fin'; myRace.endAt = Date.now(); }
+  else if (n - myRace.a < need - myRace.c) { myRace.st = 'dq'; myRace.endAt = Date.now(); }
+  myRace.resends = 0;
+  sendRaceProgress(myRace.st !== 'run');
+  saveMe(); renderRace();
+  clearTimeout(myRace.tNext);
+  // automatically move on to the next random question - nobody waits for anyone else
+  myRace.tNext = setTimeout(() => {
+    myRace.locked = false; myRace.picked = null; myRace.flash = null; myRace.qStart = Date.now();
+    renderRace();
+  }, ok ? 450 : 900);
+}
+function fireRP() {
+  clearTimeout(myRace.tSend); myRace.tSend = null; myRace.lastSend = Date.now();
+  sendMsg({ type: 'RP', pid: myPid, rid: myRace.rid, a: myRace.a, c: myRace.c, st: myRace.st });
+}
+// progress is coalesced (max ~1 msg/sec per player) to stay friendly to the free relay
+function sendRaceProgress(force) {
+  const gap = Date.now() - myRace.lastSend;
+  if (force || gap >= 1000) fireRP();
+  else if (!myRace.tSend) myRace.tSend = setTimeout(fireRP, 1000 - gap);
+}
 
-    function raceCard(title, text) {
-      return `<div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-2"><div class="text-xl font-black text-white">${title}</div><div class="text-sm text-slate-400">${text}</div></div>`;
+function raceTick() {
+  if (modeOf() !== 'race' || !currentRole) return;
+  const now = Date.now();
+  if (currentRole === 'host') {
+    const ph = raceH.phase;
+    const clk = ph === 'running' ? now - raceH.t0 : ph === 'final' ? raceH.tEndAt - raceH.t0 : 0;
+    document.querySelectorAll('.ds-clock').forEach(e => e.innerText = fmtMs(clk));
+    const cd = ph === 'countdown' ? Math.max(0, Math.ceil((raceH.cdEnd - now) / 1000)) : 0;
+    if (ph === 'countdown' && cd !== raceH.lastCd) { raceH.lastCd = cd; if (cd <= 3 && cd > 0) playSound('tick'); }
+    document.querySelectorAll('.ds-cd').forEach(e => {
+      const goFlash = ph === 'running' && now - raceH.t0 < 1200;
+      e.classList.toggle('hidden', !(ph === 'countdown' || goFlash));
+      e.innerText = goFlash ? 'GO!' : cd > 3 ? 'Get ready!' : String(cd);
+    });
+    return;
+  }
+  const r = gameState.race || {};
+  if ((r.phase === 'countdown' || r.phase === 'running') && !myRace.qs && (r.ids || []).includes(myPid) && now - myRace.lastNeed > 4000) {
+    myRace.lastNeed = now; sendMsg({ type: 'HELLO' });
+  }
+  if (myRace.started) {
+    const end = myRace.st === 'run' ? now : (myRace.endAt || now);
+    const ck = document.getElementById('raceClock'); if (ck) ck.innerText = fmtMs(end - myRace.t0);
+  }
+  if (myRace.started && myRace.st === 'run' && !myRace.locked && r.phase === 'running') {
+    const q = curQ();
+    if (q) {
+      const total = q.t * 1000, left = Math.max(0, total - (now - myRace.qStart));
+      const bar = document.getElementById('raceBar'), secs = document.getElementById('raceSecs');
+      if (bar) bar.style.width = (100 * left / total) + '%';
+      if (secs) secs.innerText = Math.ceil(left / 1000) + 's';
+      if (left <= 0) resolveAnswer(-1);
     }
-    function raceTopList(top, me) {
-      return top.map((t, i) => `<div class="flex items-center justify-between gap-3 px-3 py-2 rounded-xl ${i === 0 ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-slate-900 border border-slate-800'}">
-        <span class="text-sm font-bold ${i === 0 ? 'text-amber-400' : 'text-slate-300'}">${i + 1}. ${escAttr(t[0])}</span><span class="text-xs text-slate-400">${t[2]} tiles</span><span class="text-sm font-black text-white">${t[1]}</span></div>`).join('');
-    }
+  }
+  if (myRace.started && myRace.st !== 'run' && myRace.resends < 3 && now - myRace.lastSend > 3500) { myRace.resends++; fireRP(); }
+}
+setInterval(raceTick, 250);
 
-    function racePlayerHTML() {
-      const r = gameState.race || {}, ph = r.phase || 'idle', ids = r.ids || [], n = r.n || raceQs.length;
-      const joined = ids.includes(myPid), full = !joined && ids.length >= RACE_CAP;
-      const tiles = Array.from({ length: n }, (_, i) => `<span class="w-5 h-5 rounded ${i < myRace.correct ? 'bg-emerald-400' : 'bg-slate-800 border border-slate-700'}"></span>`).join('');
-      const head = `<div class="space-y-3 mb-5"><div class="flex items-center justify-between"><div class="text-sm font-bold text-white">${escAttr(myName)}</div><div class="text-sm font-black text-cyan-300">${myRace.score} pts</div></div><div class="flex flex-wrap gap-1.5">${tiles}</div></div>`;
-      let body = '';
-      const res = myRace.result;
-      if (full) body = raceCard('Race is full', `The race already has ${RACE_CAP} players. Please wait for the next game.`);
-      else if (ph === 'idle') body = raceCard(`You're in, ${escAttr(myName)}!`, `Waiting for the host to start the race... ${r.players || 0} player(s) joined.`);
-      else if (ph === 'question') {
-        const q = myRace.q;
-        if (!q || q.i !== r.qi) body = raceCard('Get ready!', 'The next question is loading...');
-        else {
-          const locked = myRace.answered !== null || myRace.expired;
-          body = `<div class="space-y-4">
-            <div class="flex items-center justify-between text-xs text-slate-400"><span>Question ${q.i + 1} of ${q.n}</span><span id="raceSecs" class="font-bold text-amber-400">${q.dur}s</span></div>
-            <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div id="raceBar" class="h-full bg-amber-500" style="width:100%"></div></div>
-            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 text-lg font-bold text-white">${escAttr(q.prompt)}</div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${q.choices.map((c, i) => `<button onclick="raceChoose(${i})" ${locked ? 'disabled' : ''} class="text-left p-4 rounded-2xl border-2 text-sm font-semibold text-white transition ${myRace.answered === i ? 'border-amber-400 bg-amber-500/20' : 'border-slate-700 bg-slate-900 hover:border-cyan-500/60'} ${locked && myRace.answered !== i ? 'opacity-50' : ''}"><span class="text-amber-400 font-black mr-2">${'ABCD'[i]}</span>${escAttr(c)}</button>`).join('')}</div>
-            <div class="text-center text-sm text-amber-300 font-semibold">${myRace.answered !== null ? 'Answer locked in! Waiting for time to end...' : myRace.expired ? "Time's up!" : ''}</div></div>`;
-        }
-      } else if (res && (ph === 'final' || res.i === r.qi)) {
-        const mine = (res.sc[myPid] || [0])[0], rank = 1 + Object.values(res.sc).filter(v => v[0] > mine).length, total = Object.keys(res.sc).length;
-        const q = myRace.q && myRace.q.i === res.i ? myRace.q : null;
-        const right = myRace.answered === res.correct;
-        const banner = ph === 'final'
-          ? `<div class="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center"><div class="text-xl font-black text-amber-300">Race finished!</div><div class="text-sm text-slate-300 mt-1">You placed #${rank} of ${total} with ${mine} points.</div></div>`
-          : `<div class="p-5 rounded-2xl text-center border ${right ? 'bg-emerald-950/50 border-emerald-700' : 'bg-rose-950/50 border-rose-800'}"><div class="text-xl font-black ${right ? 'text-emerald-300' : 'text-rose-300'}">${right ? 'Correct! +' + myRace.gained + ' pts' : (myRace.answered === null ? "Time's up!" : 'Not quite')}</div>
-              <div class="text-sm text-slate-300 mt-1">Correct answer: ${'ABCD'[res.correct]}${q ? '. ' + escAttr(q.choices[res.correct]) : ''}</div><div class="text-xs text-slate-400 mt-1">You are #${rank} of ${total}</div></div>`;
-        body = `<div class="space-y-4">${banner}<div class="space-y-2">${raceTopList(res.top)}</div>${ph === 'final' ? '' : '<div class="text-center text-xs text-slate-500">Waiting for the next question...</div>'}</div>`;
-      } else body = raceCard('Hang on...', 'Waiting for the host.');
-      return head + body;
-    }
+// ---- rendering (race screen) ----
+let lastRaceHtml = '';
+function renderRace() {
+  if (!currentRole || modeOf() !== 'race') return;
+  const host = currentRole === 'host';
+  const scene = document.getElementById('raceHostScene');
+  scene.classList.toggle('hidden', !host);
+  document.getElementById('raceSub').innerText = host ? `Host - ${Object.keys(raceH.players).length} / ${RACE_CAP} ducks` : `Player - ${myName}`;
+  if (host) sceneUpdate(scene);
+  const ae = document.activeElement;
+  if (host && ae && ae.id === 'racePctInput') return;
+  const html = host ? raceHostHTML() : racePlayerHTML();
+  if (html !== lastRaceHtml) { document.getElementById('raceBody').innerHTML = html; lastRaceHtml = html; }
+  raceTick();
+}
+function rulesLine(n, need, pct) {
+  return `<div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-sm text-slate-300 space-y-1.5 text-left">
+    <div>🦆 Answer questions as fast as you can. Every answer instantly gives you a new random question - you never wait for anyone.</div>
+    <div>🏁 Get <b class="text-amber-300">${need} correct</b> (${pct}% of ${n}) to cross the finish line. First duck across wins!</div>
+    <div>❌ Make too many mistakes and you can no longer reach ${need} - you are <b class="text-rose-300">disqualified</b>.</div></div>`;
+}
+function racePlayerHTML() {
+  const r = gameState.race || {}, ph = r.phase || 'idle', ids = r.ids || [], n = r.n || raceQs.length, need = r.need || 1, pct = r.pct || 60;
+  const joined = ids.includes(myPid);
+  const card = (t, s) => `<div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-2"><div class="text-xl font-black text-white">${t}</div><div class="text-sm text-slate-400">${s}</div></div>`;
+  if (!joined && ids.length >= RACE_CAP) return card('Race is full', `The race already has ${RACE_CAP} players. Please wait for the next game.`);
+  if (ph === 'idle') return `<div class="space-y-4">${card(`You're in, ${escAttr(myName)}! 🦆`, `Waiting for the host to start the race... ${r.players || 0} duck(s) on the water.`)}${rulesLine(n, need, pct)}</div>`;
+  if (!joined) return card('Race in progress', 'This race already started. Please wait for the next one.');
+  if (ph === 'countdown' || (ph === 'running' && !myRace.started)) {
+    return `<div class="space-y-4">${card('Get ready! 🦆', myRace.qs ? 'The race is about to start...' : 'Loading questions...')}${rulesLine(n, need, pct)}</div>`;
+  }
+  // header + track
+  const frac = Math.min(1, myRace.c / Math.max(1, need));
+  const missesLeft = Math.max(0, (n - need) - myRace.w);
+  const head = `<div class="rounded-2xl bg-sky-900/40 border border-sky-700/40 p-3 mb-4">
+    <div class="flex items-center justify-between text-xs"><span class="font-bold text-white">${escAttr(myName)}</span><span id="raceClock" class="font-black text-sky-200">00:00</span></div>
+    <div class="relative h-10 mt-2 rounded-full bg-sky-950/70 overflow-hidden border border-sky-700/40">
+      <div class="absolute inset-y-0 left-0 bg-sky-500/30" style="width:${(frac * 82 + 3).toFixed(1)}%"></div>
+      <div class="absolute top-1/2 ${myRace.flash === 'ok' ? 'ds-hop' : ''}" style="left:${(2 + frac * 78).toFixed(1)}%;width:38px;height:28px;margin-top:-14px">${duckSVG(DUCK_COLORS[(Object.keys(r.ids || []).length ? (ids.indexOf(myPid) % DUCK_COLORS.length) : 0)])}</div>
+      <div class="absolute right-2 top-1/2 -translate-y-1/2 text-lg">🏁</div></div>
+    <div class="flex justify-between text-xs mt-2"><span class="text-emerald-300 font-bold">${myRace.c} / ${need} correct to finish</span><span class="${missesLeft <= 2 ? 'text-rose-300' : 'text-slate-400'} font-semibold">${missesLeft} miss${missesLeft === 1 ? '' : 'es'} left</span></div></div>`;
+  // end states
+  if (!myRace.locked && (myRace.st !== 'run' || ph === 'final')) {
+    const place = (r.fin || []).indexOf(myPid) + 1, secs = fmtMs((myRace.endAt || Date.now()) - myRace.t0);
+    let box;
+    if (myRace.st === 'fin') box = `<div class="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-center space-y-1"><div class="text-4xl">${place ? medal(place) : '🏁'}</div><div class="text-2xl font-black text-amber-300">You crossed the finish line!</div><div class="text-sm text-slate-300">${place ? 'You placed #' + place : 'Confirming your place...'} - time ${secs} - ${myRace.c}/${myRace.n} correct</div></div>`;
+    else box = `<div class="p-6 rounded-2xl bg-rose-950/50 border border-rose-800 text-center space-y-1"><div class="text-4xl">🚫</div><div class="text-2xl font-black text-rose-300">Disqualified</div><div class="text-sm text-slate-300">${myRace.st === 'dq' ? `You needed ${need} correct answers (${pct}%) but only got ${myRace.c}.` : 'The race ended before you reached the finish line.'}</div></div>`;
+    let rank = '';
+    if (ph === 'final' && r.top) rank = `<div class="mt-4 space-y-2"><div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Final ranking</div>${r.top.map(t => `<div class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm"><span class="font-bold ${t[1] ? 'text-slate-100' : 'text-slate-500'}">${t[1] ? medal(t[1]) : '🚫'} ${escAttr(t[0])}</span><span class="text-xs text-slate-400">${t[1] ? fmtMs(t[3] * 1000) : 'DQ'}</span></div>`).join('')}</div>`;
+    else rank = '<div class="mt-3 text-center text-xs text-slate-500">Waiting for the other ducks to finish...</div>';
+    return head + box + rank;
+  }
+  // question
+  const q = curQ();
+  if (!q) return head + card('Loading...', 'Fetching your next question.');
+  const total = q.t;
+  const qn = myRace.locked ? myRace.a : myRace.a + 1;
+  const msg = myRace.flash === 'ok' ? '<span class="text-emerald-300">Correct! Your duck swims ahead 🦆</span>' : myRace.flash === 'bad' ? '<span class="text-rose-300">Not quite - on to the next one!</span>' : myRace.flash === 'time' ? "<span class=\"text-rose-300\">Time's up - next question!</span>" : '';
+  return `${head}<div class="space-y-4">
+    <div class="flex items-center justify-between text-xs text-slate-400"><span>Question ${qn} of ${n}</span><span id="raceSecs" class="font-bold text-amber-400">${total}s</span></div>
+    <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div id="raceBar" class="h-full bg-amber-500" style="width:100%"></div></div>
+    <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-lg font-bold text-white">${escAttr(q.p)}</div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${q.c.map((c, i) => {
+      let cls = 'border-slate-700 bg-slate-900 hover:border-cyan-500/60';
+      if (myRace.locked) cls = i === q.a ? 'border-emerald-400 bg-emerald-500/20' : i === myRace.picked ? 'border-rose-400 bg-rose-500/20' : 'border-slate-800 bg-slate-900 opacity-50';
+      return `<button onclick="raceChoose(${i})" ${myRace.locked ? 'disabled' : ''} class="text-left p-4 rounded-2xl border-2 text-sm font-semibold text-white transition ${cls}"><span class="text-amber-400 font-black mr-2">${'ABCD'[i]}</span>${escAttr(c)}</button>`;
+    }).join('')}</div>
+    <div class="text-center text-sm font-semibold h-5">${msg}</div></div>`;
+}
 
-    function raceHostHTML() {
-      const ph = raceH.phase, ids = Object.keys(raceH.players), np = ids.length, n = raceQs.length, q = raceQs[raceH.qi];
-      const amber = 'bg-amber-500 hover:bg-amber-400 text-slate-950', gray = 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700';
-      const btn = (label, fn, cls, dis) => `<button onclick="${fn}" ${dis ? 'disabled' : ''} class="px-4 py-2 rounded-xl text-xs font-bold transition ${cls} ${dis ? 'opacity-40 cursor-not-allowed' : ''}">${label}</button>`;
-      const counts = [0, 0, 0, 0, 0, 0];
-      Object.values(raceH.answers).forEach(a => { if (a.a >= 0 && a.a < 6) counts[a.a]++; });
-      const choicesHTML = q ? q.choices.map((c, i) => `<div class="p-3 rounded-xl border text-sm ${ph === 'results' && i === q.correct ? 'border-emerald-500 bg-emerald-950/40 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-200'} flex items-center justify-between gap-3"><span><b class="text-amber-400 mr-2">${'ABCD'[i]}</b>${escAttr(c)}</span>${ph === 'results' ? `<span class="text-xs text-slate-400">${counts[i]} answered</span>` : ''}</div>`).join('') : '';
-      let main = '', actions = '';
-      if (ph === 'idle') {
-        const chips = ids.map(id => `<span class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-200">${escAttr(raceH.players[id].name)}</span>`).join('');
-        main = `<div class="space-y-3"><div class="text-lg font-black text-white">Lobby</div><div class="text-sm text-slate-400">${np} player${np === 1 ? '' : 's'} joined (max ${RACE_CAP}). ${n} question${n === 1 ? '' : 's'} ready.</div><div class="flex flex-wrap gap-2">${chips || '<span class="text-xs text-slate-500">Waiting for players to join...</span>'}</div></div>`;
-        actions = btn('Start Race', 'raceStart()', amber, !np || !n);
-      } else if (ph === 'question') {
-        main = `<div class="space-y-3"><div class="flex items-center justify-between text-xs text-slate-400"><span>Question ${raceH.qi + 1} of ${n}</span><span id="raceCountdown" class="font-bold text-amber-400"></span></div><div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-lg font-bold text-white">${escAttr(q.prompt)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${choicesHTML}</div><div class="text-sm text-slate-400">${Object.keys(raceH.answers).length} / ${np} answered</div></div>`;
-        actions = btn('End Question Now', 'raceEnd()', gray);
-      } else if (ph === 'results') {
-        main = `<div class="space-y-3"><div class="text-xs text-slate-400">Question ${raceH.qi + 1} of ${n} - results</div><div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-lg font-bold text-white">${escAttr(q.prompt)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${choicesHTML}</div></div>`;
-        actions = btn(raceH.qi + 1 >= n ? 'Show Final Results' : 'Next Question', 'raceNext()', amber);
-      } else {
-        const w = raceRanked()[0];
-        main = `<div class="p-8 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center space-y-2"><div class="text-sm text-amber-300 font-bold uppercase tracking-wider">Race finished</div><div class="text-3xl font-black text-white">${w ? escAttr(w.name) : 'No winner'}</div><div class="text-sm text-slate-300">${w ? w.score + ' points - ' + w.correct + '/' + n + ' tiles' : ''}</div></div>`;
-        actions = btn('Reset Race', 'raceReset()', amber);
-      }
-      if (ph !== 'idle' && ph !== 'final') actions += btn('Reset Race', 'raceReset()', gray);
-      const lb = raceRanked().slice(0, 10).map((p, i) => `<div class="flex items-center justify-between gap-3 px-3 py-2 rounded-xl ${i === 0 ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-slate-900 border border-slate-800'}"><span class="text-sm font-bold text-slate-200 truncate">${i + 1}. ${escAttr(p.name)}</span><span class="text-xs text-slate-400">${p.correct}/${n}</span><span class="text-sm font-black text-white">${p.score}</span></div>`).join('');
-      return `<div class="grid grid-cols-1 lg:grid-cols-3 gap-5"><div class="lg:col-span-2 space-y-4">${main}<div class="flex flex-wrap gap-2">${actions}</div></div><div class="space-y-2"><div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Leaderboard</div>${lb || '<div class="text-xs text-slate-500">No players yet.</div>'}</div></div>`;
-    }
+// ---- ranking list (host screen + TV) ----
+function rankRowsHTML(limit, big) {
+  const rk = raceRanked(), need = raceH.phase === 'idle' ? raceNeed(raceQs.length, racePct) : raceH.need;
+  const pad = big ? 'px-3 py-2.5 text-base' : 'px-3 py-2 text-sm';
+  return rk.slice(0, limit).map((p, i) => {
+    const lead = p.st === 'fin' && p.place === 1;
+    const right = p.st === 'fin' ? `<span class="text-xs text-slate-400">${fmtMs(p.t)}</span>` : p.st === 'dq' ? '<span class="text-xs font-bold text-rose-400">DQ</span>' : `<span class="text-xs font-bold text-sky-300">${p.c}/${need}</span>`;
+    const lead2 = p.st === 'fin' ? medal(p.place) : p.st === 'dq' ? '🚫' : (i + 1);
+    return `<div class="flex items-center justify-between gap-3 ${pad} rounded-xl ${lead ? 'bg-amber-500/10 border border-amber-500/40' : 'bg-slate-900/80 border border-slate-800'} ${p.st === 'dq' ? 'opacity-60' : ''}"><span class="font-bold truncate ${lead ? 'text-amber-300' : 'text-slate-100'}"><span class="inline-block w-8 text-slate-400">${lead2}</span>${escAttr(p.name)}</span>${right}</div>`;
+  }).join('');
+}
+function raceHostHTML() {
+  const ph = raceH.phase, ids = Object.keys(raceH.players), np = ids.length, nq = raceQs.length;
+  const n = ph === 'idle' ? nq : raceH.n, need = ph === 'idle' ? raceNeed(nq, racePct) : raceH.need;
+  const cnt = { fin: 0, dq: 0, run: 0 };
+  Object.values(raceH.players).forEach(p => cnt[p.st === 'fin' ? 'fin' : p.st === 'dq' ? 'dq' : 'run']++);
+  const btn = (label, fn, cls, dis) => `<button onclick="${fn}" ${dis ? 'disabled' : ''} class="px-5 py-2.5 rounded-xl text-sm font-bold ${cls} ${dis ? 'opacity-40 cursor-not-allowed' : ''}">${label}</button>`;
+  const amber = 'bg-amber-500 hover:bg-amber-400 text-slate-950', gray = 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700';
+  let main, actions = '';
+  if (ph === 'idle') {
+    const chips = ids.map(id => `<span class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-200">${escAttr(raceH.players[id].name)}</span>`).join('');
+    main = `<div class="space-y-4"><div class="text-lg font-black text-white">Lobby</div>
+      <div class="text-sm text-slate-400">${np} duck${np === 1 ? '' : 's'} joined (max ${RACE_CAP}). ${nq} question${nq === 1 ? '' : 's'} in the deck.</div>
+      <div class="flex flex-wrap items-center gap-3 p-3 rounded-2xl bg-slate-900 border border-slate-800">
+        <label class="text-xs font-semibold text-slate-300">Correct answers needed to cross the finish line</label>
+        <input id="racePctInput" type="number" min="10" max="100" value="${racePct}" onchange="raceSetPct(this.value)" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500"><span class="text-xs text-slate-400">%</span>
+        <span class="text-xs font-bold text-amber-300">= ${need} of ${nq} questions</span></div>
+      <div class="flex flex-wrap gap-2">${chips || '<span class="text-xs text-slate-500">Waiting for players to join...</span>'}</div></div>`;
+    actions = btn('Start Race', 'raceStart()', amber, !np || nq < 2);
+  } else if (ph === 'final') {
+    const w = raceRanked()[0], won = w && w.st === 'fin';
+    main = `<div class="p-8 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center space-y-2"><div class="text-sm text-amber-300 font-bold uppercase tracking-wider">Race finished</div><div class="text-3xl font-black text-white">${won ? '🥇 ' + escAttr(w.name) : 'No winner'}</div><div class="text-sm text-slate-300">${won ? fmtMs(w.t) + ' - ' + w.c + '/' + n + ' correct' : 'Nobody reached ' + need + ' correct answers.'}</div></div>`;
+    actions = btn('New Race', 'raceReset()', amber);
+  } else {
+    main = `<div class="grid grid-cols-3 gap-3 text-center"><div class="p-3 rounded-2xl bg-slate-900 border border-slate-800"><div class="text-2xl font-black text-sky-300">${cnt.run}</div><div class="text-xs text-slate-400">racing</div></div><div class="p-3 rounded-2xl bg-slate-900 border border-slate-800"><div class="text-2xl font-black text-emerald-300">${cnt.fin}</div><div class="text-xs text-slate-400">finished</div></div><div class="p-3 rounded-2xl bg-slate-900 border border-slate-800"><div class="text-2xl font-black text-rose-300">${cnt.dq}</div><div class="text-xs text-slate-400">disqualified</div></div></div>
+      <div class="text-xs text-slate-400">Finish line: ${need} correct answers out of ${n} questions.</div>`;
+    actions = ph === 'running' ? btn('End Race Now', 'raceFinish()', gray) : '';
+  }
+  if (ph !== 'idle' && ph !== 'final' && ph !== 'running') actions += btn('Cancel', 'raceReset()', gray);
+  if (ph === 'running') actions += btn('Reset', 'raceReset()', gray);
+  const list = ph === 'idle' ? '' : `<div class="space-y-2"><div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ranking</div>${rankRowsHTML(12, false)}</div>`;
+  return `<div class="space-y-5">${main}<div class="flex flex-wrap items-center gap-2">${actions}</div>${list}</div>`;
+}
 
-    // ---- race question editor ----
-    function openRaceEditor() {
-      if (currentRole !== 'host' || raceH.phase === 'question') return;
-      buildRaceEditor(raceQs);
-      document.getElementById('raceEditorModal').classList.remove('hidden');
-    }
-    function closeRaceEditor() { document.getElementById('raceEditorModal').classList.add('hidden'); }
-    function buildRaceEditor(list) {
-      const inp = 'w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500';
-      document.getElementById('raceEditorList').innerHTML = list.map((q, i) => `
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start border border-slate-800 rounded-2xl p-3 bg-slate-950/50">
-          <div class="lg:col-span-1 flex lg:flex-col items-center gap-2"><span class="text-amber-400 font-black text-sm">#${i + 1}</span><button onclick="delRaceRow(${i})" class="text-[11px] text-rose-400 hover:text-rose-300">Delete</button></div>
-          <div class="lg:col-span-5"><textarea id="rq_p_${i}" rows="4" class="${inp}">${escAttr(q.prompt)}</textarea><div class="flex items-center gap-2 mt-2"><input id="rq_t_${i}" type="number" min="5" max="120" value="${q.timer || 20}" class="${inp} w-20"><span class="text-xs text-slate-500">sec</span></div></div>
-          <div class="lg:col-span-6 space-y-1.5">${[0, 1, 2, 3].map(j => `<label class="flex items-center gap-2"><input type="radio" name="rq_ok_${i}" value="${j}" ${(q.correct || 0) === j ? 'checked' : ''} class="accent-amber-500"><span class="text-xs text-slate-500 w-3">${'ABCD'[j]}</span><input id="rq_c_${i}_${j}" value="${escAttr((q.choices || [])[j])}" class="${inp}"></label>`).join('')}</div>
-        </div>`).join('');
-    }
-    function readRaceEditor() {
-      const out = [], count = document.querySelectorAll('[id^="rq_p_"]').length;
-      for (let i = 0; i < count; i++) {
-        const vals = [0, 1, 2, 3].map(j => document.getElementById(`rq_c_${i}_${j}`).value.trim());
-        let last = 3; while (last >= 0 && !vals[last]) last--;
-        const choices = vals.slice(0, Math.max(last + 1, 2)).map((t, j) => t || 'Choice ' + 'ABCD'[j]);
-        const sel = document.querySelector(`input[name="rq_ok_${i}"]:checked`);
-        const prompt = document.getElementById(`rq_p_${i}`).value.trim();
-        out.push({ prompt, choices, correct: Math.min(sel ? parseInt(sel.value) : 0, choices.length - 1),
-          timer: Math.max(5, Math.min(120, parseInt(document.getElementById(`rq_t_${i}`).value) || 20)), _ok: !!prompt && vals.filter(Boolean).length >= 2 });
-      }
-      return out;
-    }
-    function addRaceRow() { const l = readRaceEditor(); if (l.length >= 30) return; l.push({ prompt: '', choices: ['', '', '', ''], correct: 0, timer: 20 }); buildRaceEditor(l); }
-    function delRaceRow(i) { const l = readRaceEditor(); l.splice(i, 1); buildRaceEditor(l); }
-    function saveRaceEditor() {
-      const l = readRaceEditor().filter(q => q._ok).slice(0, 30).map(({ prompt, choices, correct, timer }) => ({ prompt, choices, correct, timer }));
-      if (!l.length) return;
-      raceQs = l;
-      try { localStorage.setItem('gogo_race_questions', JSON.stringify(l)); } catch (e) {}
-      if (raceH.phase === 'final') raceReset(); else broadcastState();
-      closeRaceEditor();
-    }
+// ---- race question editor ----
+function openRaceEditor() {
+  if (currentRole !== 'host' || raceH.phase === 'running' || raceH.phase === 'countdown') return;
+  buildRaceEditor(raceQs);
+  document.getElementById('raceEditorModal').classList.remove('hidden');
+}
+function closeRaceEditor() { document.getElementById('raceEditorModal').classList.add('hidden'); }
+function buildRaceEditor(list) {
+  const inp = 'w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500';
+  document.getElementById('raceEditorList').innerHTML = list.map((q, i) => `
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start border border-slate-800 rounded-2xl p-3 bg-slate-950/50">
+      <div class="lg:col-span-1 flex lg:flex-col items-center gap-2"><span class="text-amber-400 font-black text-sm">#${i + 1}</span><button onclick="delRaceRow(${i})" class="text-[11px] text-rose-400 hover:text-rose-300">Delete</button></div>
+      <div class="lg:col-span-5"><textarea id="rq_p_${i}" rows="4" class="${inp}">${escAttr(q.prompt)}</textarea><div class="flex items-center gap-2 mt-2"><input id="rq_t_${i}" type="number" min="5" max="120" value="${q.timer || 20}" class="${inp} w-20"><span class="text-xs text-slate-500">sec per question</span></div></div>
+      <div class="lg:col-span-6 space-y-1.5">${[0, 1, 2, 3].map(j => `<label class="flex items-center gap-2"><input type="radio" name="rq_ok_${i}" value="${j}" ${(q.correct || 0) === j ? 'checked' : ''} class="accent-amber-500"><span class="text-xs text-slate-500 w-3">${'ABCD'[j]}</span><input id="rq_c_${i}_${j}" value="${escAttr((q.choices || [])[j])}" class="${inp}"></label>`).join('')}</div>
+    </div>`).join('');
+}
+function readRaceEditor() {
+  const out = [], count = document.querySelectorAll('[id^="rq_p_"]').length;
+  for (let i = 0; i < count; i++) {
+    const vals = [0, 1, 2, 3].map(j => document.getElementById(`rq_c_${i}_${j}`).value.trim());
+    let last = 3; while (last >= 0 && !vals[last]) last--;
+    const choices = vals.slice(0, Math.max(last + 1, 2)).map((t, j) => t || 'Choice ' + 'ABCD'[j]);
+    const sel = document.querySelector(`input[name="rq_ok_${i}"]:checked`);
+    const prompt = document.getElementById(`rq_p_${i}`).value.trim();
+    out.push({ prompt, choices, correct: Math.min(sel ? parseInt(sel.value) : 0, choices.length - 1),
+      timer: Math.max(5, Math.min(120, parseInt(document.getElementById(`rq_t_${i}`).value) || 20)), _ok: !!prompt && vals.filter(Boolean).length >= 2 });
+  }
+  return out;
+}
+function addRaceRow() { const l = readRaceEditor(); if (l.length >= 30) return; l.push({ prompt: '', choices: ['', '', '', ''], correct: 0, timer: 20 }); buildRaceEditor(l); }
+function delRaceRow(i) { const l = readRaceEditor(); l.splice(i, 1); buildRaceEditor(l); }
+function saveRaceEditor() {
+  const l = readRaceEditor().filter(q => q._ok).slice(0, 30).map(({ prompt, choices, correct, timer }) => ({ prompt, choices, correct, timer }));
+  if (!l.length) return;
+  raceQs = l;
+  try { localStorage.setItem('gogo_race_questions', JSON.stringify(l)); } catch (e) {}
+  if (raceH.phase === 'final') raceReset(); else broadcastState();
+  closeRaceEditor();
+}
 
-    /* ================= TV MODE ================= */
-    function toggleTV(on) {
-      if (currentRole !== 'host') return;
-      tvOpen = on === undefined ? !tvOpen : on;
-      document.getElementById('tvOverlay').classList.toggle('hidden', !tvOpen);
-      renderTV();
+/* ================= DUCK SCENE (shared by host screen + TV) ================= */
+function sceneEnsure(el) {
+  if (el._scene) return el._scene;
+  el.classList.add('duck-scene');
+  el.innerHTML = `<div class="ds-grass"></div><div class="ds-waves"></div><div class="ds-cloud" style="top:26%;left:12%;width:150px"></div><div class="ds-cloud" style="top:62%;left:48%;width:200px;animation-delay:-20s"></div>
+    <div class="ds-finish"><span>FINISH</span></div>
+    <div class="ds-pill ds-clockpill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="ds-clock">00:00</span></div>
+    <div class="ds-pill ds-needpill"></div><div class="ds-cd hidden"></div><div class="ds-ducks"></div>`;
+  el._scene = { ducks: {}, layer: el.querySelector('.ds-ducks'), need: el.querySelector('.ds-needpill') };
+  return el._scene;
+}
+function sceneUpdate(el) {
+  const S = sceneEnsure(el), W = el.clientWidth || 800, H = el.clientHeight || 360;
+  const ids = Object.keys(raceH.players), N = Math.max(1, ids.length);
+  const need = raceH.phase === 'idle' ? raceNeed(raceQs.length, racePct) : raceH.need, n = raceH.phase === 'idle' ? raceQs.length : raceH.n;
+  S.need.innerText = `🏁 ${need} of ${n} correct to finish`;
+  const top0 = H * 0.2, laneH = (H * 0.97 - top0) / N;
+  const dh = Math.max(30, Math.min(78, laneH * 1.8)), dw = dh * 1.38;
+  const finishX = W * 0.86, startX = W * 0.02;
+  const ranked = raceRanked(), topSet = new Set(ranked.filter(p => p.st !== 'dq').slice(0, 5).map(p => p.pid));
+  Object.keys(S.ducks).forEach(id => { if (!raceH.players[id]) { S.ducks[id].remove(); delete S.ducks[id]; } });
+  ids.forEach((id, i) => {
+    const p = raceH.players[id];
+    let d = S.ducks[id];
+    if (!d) {
+      d = document.createElement('div'); d.className = 'ds-duck';
+      d.innerHTML = `<div class="ds-tag"></div><div class="ds-bob" style="animation-delay:${(-Math.random() * 2).toFixed(2)}s">${duckSVG(DUCK_COLORS[(p.ci || i) % DUCK_COLORS.length])}</div>`;
+      S.layer.appendChild(d); S.ducks[id] = d;
     }
-    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && tvOpen) toggleTV(false); });
+    const frac = Math.min(1, p.c / Math.max(1, need));
+    let x = startX + frac * (finishX - dw - startX);
+    if (p.st === 'fin') x = Math.min(W - dw - 6, finishX + 10 + ((p.place - 1) % 3) * dw * 0.3);
+    d.style.width = dw + 'px'; d.style.height = dh + 'px';
+    d.style.left = x + 'px'; d.style.top = (top0 + (i + 0.5) * laneH - dh * 0.6) + 'px';
+    d.style.zIndex = 10 + i; d.style.setProperty('--fs', Math.max(9, Math.min(16, dh * 0.22)) + 'px');
+    d.classList.toggle('dq', p.st === 'dq'); d.classList.toggle('fin', p.st === 'fin');
+    const tag = d.firstChild;
+    tag.innerText = (p.st === 'fin' ? medal(p.place) + ' ' : p.st === 'dq' ? '✖ ' : (p.st === 'run' && topSet.has(id) && p.c > 0 && ranked[0].pid === id ? '👑 ' : '')) + p.name;
+    tag.style.display = (N <= 24 || topSet.has(id) || p.st === 'fin') ? '' : 'none';
+  });
+}
+window.addEventListener('resize', () => { if (modeOf() === 'race') { renderTV(); const s = document.getElementById('raceHostScene'); if (s && currentRole === 'host') sceneUpdate(s); } });
 
-    function renderTV() {
-      if (!tvOpen) return;
-      const el = document.getElementById('tvBody');
-      if (modeOf() === 'race') {
-        const rk = raceRanked(), n = raceQs.length, ph = raceH.phase;
-        const sub = ph === 'idle' ? `Waiting for players - ${rk.length} joined` : ph === 'final' ? 'Final results' : `Question ${raceH.qi + 1} of ${n}`;
-        const rows = rk.slice(0, 10).map((p, i) => `<div class="flex items-center gap-4 p-3 rounded-2xl ${i === 0 ? 'bg-amber-500/10 border border-amber-500/40' : 'bg-slate-900/70 border border-slate-800'}">
-          <div class="w-14 text-center text-4xl font-black ${i === 0 ? 'text-amber-400' : 'text-slate-500'}">${i + 1}</div>
-          <div class="w-48 md:w-64 text-xl md:text-2xl font-bold text-white truncate">${escAttr(p.name)}</div>
-          <div class="flex-1 h-6 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400" style="width:${n ? Math.round(100 * p.correct / n) : 0}%"></div></div>
-          <div class="w-20 text-right text-lg font-bold text-cyan-300">${p.correct}/${n}</div>
-          <div class="w-28 text-right text-3xl font-black ${i === 0 ? 'text-amber-400' : 'text-slate-200'}">${p.score}</div></div>`).join('');
-        el.innerHTML = `<div class="text-center mb-8"><div class="text-sm font-bold text-cyan-300 uppercase tracking-widest">Tile Race</div><div class="text-5xl font-black text-white mt-2">Leaderboard</div><div class="text-lg text-slate-400 mt-2">${sub}</div></div><div class="space-y-3">${rows || '<div class="text-center text-2xl text-slate-500 py-16">Players will appear here as they join...</div>'}</div>`;
-      } else {
-        const sc = gameState.scores, seats = gameState.seats || {};
-        const lead = sc.group1 === sc.group2 ? 'tie' : sc.group1 > sc.group2 ? 'group1' : 'group2';
-        const card = (g, label, tc) => `<div class="p-8 rounded-3xl text-center border-2 ${lead === g ? 'border-amber-400 bg-amber-500/10' : 'border-slate-800 bg-slate-900/70'}">
-          <div class="text-2xl font-bold ${tc}">${label}${seats[g] ? ' - ' + escAttr(seats[g].name) : ''}</div>
-          <div class="text-7xl font-black text-white mt-4">${sc[g]}</div><div class="text-lg text-slate-400 mt-1">points</div>
-          <div class="text-sm font-bold text-amber-400 mt-3 h-5">${lead === g ? 'LEADING' : ''}</div></div>`;
-        el.innerHTML = `<div class="text-center mb-8"><div class="text-sm font-bold text-amber-400 uppercase tracking-widest">Jeopardy</div><div class="text-5xl font-black text-white mt-2">Scoreboard</div>${lead === 'tie' ? '<div class="text-lg text-slate-400 mt-2">Tied game!</div>' : ''}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-6">${card('group1', 'Group 1', 'text-cyan-400')}${card('group2', 'Group 2', 'text-emerald-400')}</div>`;
-      }
+/* ================= TV MODE ================= */
+function toggleTV(on) {
+  if (currentRole !== 'host') return;
+  tvOpen = on === undefined ? !tvOpen : on;
+  document.getElementById('tvOverlay').classList.toggle('hidden', !tvOpen);
+  renderTV();
+}
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && tvOpen) toggleTV(false); });
+
+let lastTvRank = '', lastTvFinal = '';
+function renderTV() {
+  if (!tvOpen) return;
+  const el = document.getElementById('tvBody');
+  if (modeOf() === 'race') {
+    if (el.dataset.mode !== 'race') {
+      el.dataset.mode = 'race'; el.className = 'w-full h-full'; lastTvRank = ''; lastTvFinal = '';
+      el.innerHTML = `<div class="flex h-full"><div id="tvScene" class="flex-1 h-full relative"></div><aside class="w-72 xl:w-80 shrink-0 h-full bg-slate-950 border-l border-slate-800 p-4 pt-16 overflow-y-auto"><div class="text-sm font-black text-sky-300 uppercase tracking-widest mb-1">Duck Race</div><div id="tvRankSub" class="text-xs text-slate-400 mb-3"></div><div id="tvRank" class="space-y-2"></div></aside></div>`;
     }
+    const scene = document.getElementById('tvScene');
+    sceneUpdate(scene);
+    const ph = raceH.phase, rk = raceRanked();
+    document.getElementById('tvRankSub').innerText = ph === 'idle' ? `Waiting for ducks - ${rk.length} joined` : ph === 'final' ? 'Final ranking' : ph === 'countdown' ? 'Get ready...' : `${rk.filter(p => p.st === 'fin').length} finished - ${rk.filter(p => p.st === 'dq').length} DQ`;
+    const rows = rk.length ? rankRowsHTML(14, true) : '<div class="text-sm text-slate-500">Ducks will appear here as players join...</div>';
+    if (rows !== lastTvRank) { document.getElementById('tvRank').innerHTML = rows; lastTvRank = rows; }
+    let fin = document.getElementById('tvFinal');
+    if (!fin) { fin = document.createElement('div'); fin.id = 'tvFinal'; fin.className = 'ds-final hidden'; scene.appendChild(fin); }
+    if (ph === 'final') {
+      const w = rk[0], won = w && w.st === 'fin';
+      const html = `<div class="text-sm font-bold text-amber-300 uppercase tracking-widest">Race finished</div><div class="text-5xl font-black text-white mt-1">${won ? '🥇 ' + escAttr(w.name) : 'No winner'}</div><div class="text-base text-slate-300 mt-1 mb-4">${won ? 'Time ' + fmtMs(w.t) + ' - ' + w.c + '/' + raceH.n + ' correct' : 'Nobody reached ' + raceH.need + ' correct answers'}</div><div class="grid gap-2 text-left" style="grid-template-columns:repeat(${rk.length > 8 ? 2 : 1},minmax(0,1fr))">${rankRowsHTML(16, true)}</div>`;
+      if (html !== lastTvFinal) { fin.innerHTML = html; lastTvFinal = html; }
+      fin.classList.remove('hidden');
+    } else { fin.classList.add('hidden'); lastTvFinal = ''; }
+    raceTick();
+  } else {
+    if (el.dataset.mode !== 'jeo') { el.dataset.mode = 'jeo'; el.className = 'max-w-6xl mx-auto p-6 md:p-10'; }
+    const sc = gameState.scores, seats = gameState.seats || {};
+    const lead = sc.group1 === sc.group2 ? 'tie' : sc.group1 > sc.group2 ? 'group1' : 'group2';
+    const card = (g, label, tc) => `<div class="p-8 rounded-3xl text-center border-2 ${lead === g ? 'border-amber-400 bg-amber-500/10' : 'border-slate-800 bg-slate-900/70'}">
+      <div class="text-2xl font-bold ${tc}">${label}${seats[g] ? ' - ' + escAttr(seats[g].name) : ''}</div>
+      <div class="text-7xl font-black text-white mt-4">${sc[g]}</div><div class="text-lg text-slate-400 mt-1">points</div>
+      <div class="text-sm font-bold text-amber-400 mt-3 h-5">${lead === g ? 'LEADING' : ''}</div></div>`;
+    el.innerHTML = `<div class="text-center mb-8"><div class="text-sm font-bold text-amber-400 uppercase tracking-widest">Jeopardy</div><div class="text-5xl font-black text-white mt-2">Scoreboard</div>${lead === 'tie' ? '<div class="text-lg text-slate-400 mt-2">Tied game!</div>' : ''}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-6">${card('group1', 'Group 1', 'text-cyan-400')}${card('group2', 'Group 2', 'text-emerald-400')}</div>`;
+  }
+}
 
     // Helpers
     function capitalize(str) {
