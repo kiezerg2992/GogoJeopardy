@@ -78,7 +78,7 @@
         <!-- Role Badge & Header Controls -->
         <div class="flex items-center space-x-3">
           <!-- Sync status -->
-          <div id="syncPill" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 font-semibold">Sync: connecting...</div>
+          <div id="syncPill" class="sync-pill text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 font-semibold">Sync: connecting...</div>
 
           <!-- Audio Toggle -->
           <button id="muteBtn" onclick="toggleMute()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm border border-slate-700 transition flex items-center gap-1.5" title="Toggle Sound">
@@ -90,6 +90,9 @@
           <div id="roleBadgeContainer" class="flex items-center bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200">
             <!-- Dynamic role badge inserted here -->
           </div>
+
+          <button id="hostModeBtn" onclick="openModeModal()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-700 transition">Games</button>
+          <button id="hostTvBtn" onclick="toggleTV(true)" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-700 transition">TV Mode</button>
 
           <!-- Admin Question Editor Button (Only for Host) -->
           <button id="hostEditorBtn" onclick="openEditorModal()" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md shadow-amber-500/10">
@@ -128,6 +131,7 @@
           <div id="g1AdjustBtns" class="hidden mt-3 flex gap-2">
             <button onclick="adjustScore('group1', -50)" class="flex-1 py-2 bg-slate-800 hover:bg-rose-900/50 text-rose-300 font-bold rounded-xl text-sm border border-slate-700 transition">- 50</button>
             <button onclick="adjustScore('group1', 50)" class="flex-1 py-2 bg-slate-800 hover:bg-emerald-900/50 text-emerald-300 font-bold rounded-xl text-sm border border-slate-700 transition">+ 50</button>
+            <button onclick="freeSeat('group1')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-semibold rounded-xl border border-slate-700 transition">Free seat</button>
           </div>
           <div id="g1BuzzBtnContainer" class="mt-3 hidden">
             <button id="buzzBtnG1" onclick="playerBuzz('group1')" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 active:bg-cyan-600 text-slate-950 font-black rounded-xl text-base uppercase tracking-wider transition shadow-lg shadow-cyan-500/20 active:scale-95">
@@ -173,6 +177,7 @@
           <div id="g2AdjustBtns" class="hidden mt-3 flex gap-2">
             <button onclick="adjustScore('group2', -50)" class="flex-1 py-2 bg-slate-800 hover:bg-rose-900/50 text-rose-300 font-bold rounded-xl text-sm border border-slate-700 transition">- 50</button>
             <button onclick="adjustScore('group2', 50)" class="flex-1 py-2 bg-slate-800 hover:bg-emerald-900/50 text-emerald-300 font-bold rounded-xl text-sm border border-slate-700 transition">+ 50</button>
+            <button onclick="freeSeat('group2')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-semibold rounded-xl border border-slate-700 transition">Free seat</button>
           </div>
           <div id="g2BuzzBtnContainer" class="mt-3 hidden">
             <button id="buzzBtnG2" onclick="playerBuzz('group2')" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-base uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 active:scale-95">
@@ -208,7 +213,7 @@
           GG
         </div>
         <h2 class="text-2xl font-black text-white tracking-tight">Select Arcade Role</h2>
-        <p class="text-xs text-slate-400">Choose your participation mode. Only one active tab per role is permitted.</p>
+        <p class="text-xs text-slate-400">Hosts need a password. Players wait in the waiting room until the host opens a game.</p>
       </div>
 
       <!-- Role Selection Buttons -->
@@ -230,38 +235,15 @@
           <svg class="w-5 h-5 text-slate-500 group-hover:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
 
-        <!-- Group 1 Representative -->
-        <button id="roleBtnGroup1" onclick="selectRole('group1')" class="w-full p-4 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:bg-slate-800 hover:border-cyan-500/50 text-left transition group flex items-center justify-between">
+        <!-- Player -->
+        <button id="roleBtnPlayer" onclick="selectRole('player')" class="w-full p-4 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:bg-slate-800 hover:border-cyan-500/50 text-left transition flex items-center justify-between group">
           <div class="flex items-center space-x-3">
-            <div class="p-3 rounded-xl bg-cyan-500/20 text-cyan-400 group-hover:scale-105 transition">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-            </div>
+            <div class="p-3 rounded-xl bg-cyan-500/20 text-cyan-400 font-black text-sm">P</div>
             <div>
-              <div class="text-sm font-bold text-white flex items-center gap-2">
-                <span>Group 1 Representative</span>
-                <span id="badgeStatusGroup1" class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Available</span>
-              </div>
-              <div class="text-xs text-slate-400">Player buzzer team for Group 1 (Controls spacebar / 'A')</div>
+              <div class="text-sm font-bold text-white">Player</div>
+              <div class="text-xs text-slate-400">Join the waiting room. The host decides which game you play.</div>
             </div>
           </div>
-          <svg class="w-5 h-5 text-slate-500 group-hover:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>
-
-        <!-- Group 2 Representative -->
-        <button id="roleBtnGroup2" onclick="selectRole('group2')" class="w-full p-4 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:bg-slate-800 hover:border-emerald-500/50 text-left transition group flex items-center justify-between">
-          <div class="flex items-center space-x-3">
-            <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:scale-105 transition">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-            </div>
-            <div>
-              <div class="text-sm font-bold text-white flex items-center gap-2">
-                <span>Group 2 Representative</span>
-                <span id="badgeStatusGroup2" class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Available</span>
-              </div>
-              <div class="text-xs text-slate-400">Player buzzer team for Group 2 (Controls spacebar / 'L')</div>
-            </div>
-          </div>
-          <svg class="w-5 h-5 text-slate-500 group-hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
       </div>
 
@@ -272,6 +254,15 @@
           <button onclick="submitHostPassword()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs">Enter</button>
         </div>
         <p id="hostPwError" class="hidden text-xs text-rose-400">Wrong password. Try again.</p>
+      </div>
+
+      <div id="playerNamePanel" class="hidden bg-slate-800/60 border border-cyan-500/40 rounded-2xl p-4 space-y-3">
+        <label class="block text-xs font-bold text-cyan-400 uppercase tracking-wider">Your Name</label>
+        <div class="flex gap-2">
+          <input id="playerNameInput" maxlength="20" autocomplete="off" onkeydown="if(event.key==='Enter')submitPlayerName()" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="Enter your name">
+          <button onclick="submitPlayerName()" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs">Join</button>
+        </div>
+        <p id="playerNameError" class="hidden text-xs text-rose-400">Please enter your name.</p>
       </div>
 
       <div id="loginWarning" class="text-xs text-rose-400 bg-rose-950/40 border border-rose-800/50 p-3 rounded-xl hidden text-center">
@@ -379,126 +370,123 @@
   </div>
 
 
-  <!-- ADMIN QUESTION EDITOR MODAL -->
-  <div id="editorModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-6 md:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
-      
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+  <!-- ADMIN QUESTION EDITOR (one-page grid) -->
+  <div id="editorModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-6xl max-h-[94vh] flex flex-col shadow-2xl">
+      <div class="flex items-start justify-between gap-3 p-5 border-b border-slate-800">
         <div>
-          <h3 class="text-xl font-black text-white flex items-center gap-2">
-            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-            Jeopardy Question Editor
-          </h3>
-          <p class="text-xs text-slate-400">Modify categories, questions, and points live for all active tabs.</p>
+          <h2 class="text-lg font-black text-white">Question Editor</h2>
+          <p class="text-xs text-slate-400 mt-1">Edit the whole board on one page, then press Save All. Tick the circle next to each correct answer.</p>
         </div>
-        <button onclick="closeEditorModal()" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <button onclick="closeEditorModal()" class="text-slate-400 hover:text-white text-2xl leading-none px-2" aria-label="Close">&times;</button>
+      </div>
+      <div id="editorGrid" class="flex-1 overflow-y-auto p-5 space-y-5"></div>
+      <div class="border-t border-slate-800 p-4 flex flex-wrap items-center justify-between gap-3">
+        <button onclick="resetAllQuestionsToDefault()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">Reset All Questions to Default</button>
+        <div class="flex items-center gap-3">
+          <button onclick="closeEditorModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Cancel</button>
+          <button onclick="saveEditorGrid()" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-md shadow-amber-500/20">Save All</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE SELECT (host) -->
+  <div id="modeModal" class="fixed inset-0 z-[55] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 hidden overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-6 md:p-8 space-y-5 shadow-2xl">
+      <div class="text-center">
+        <h2 class="text-2xl font-black text-white">Choose a Game</h2>
+        <p class="text-xs text-slate-400 mt-1">Players stay locked in the waiting room until you open a game.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button onclick="setMode('jeopardy')" class="text-left p-5 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:border-amber-500/60 transition space-y-1">
+          <div class="text-lg font-black text-amber-400">Jeopardy</div>
+          <div class="text-xs text-slate-400">Two teams buzz in and pick tiles. Maximum 2 players.</div>
+        </button>
+        <button onclick="setMode('race')" class="text-left p-5 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:border-cyan-500/60 transition space-y-1">
+          <div class="text-lg font-black text-cyan-400">Tile Race</div>
+          <div class="text-xs text-slate-400">Everyone races through multiple-choice questions. Up to 60 players.</div>
         </button>
       </div>
-
-      <!-- Editor Form -->
-      <div class="space-y-4">
-        
-        <!-- Category & Tier Selectors -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Category</label>
-            <select id="editorCategorySelect" onchange="loadSelectedEditorQuestion()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-              <!-- Dynamically populated -->
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Point Value / Tier</label>
-            <select id="editorTierSelect" onchange="loadSelectedEditorQuestion()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-              <option value="100">100 Points (Tier 1)</option>
-              <option value="200">200 Points (Tier 2)</option>
-              <option value="300">300 Points (Tier 3)</option>
-              <option value="400">400 Points (Tier 4)</option>
-              <option value="500">500 Points (Tier 5)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Edit Category Title -->
-        <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Category Name</label>
-          <input type="text" id="editorCategoryTitle" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Category Title">
-        </div>
-
-        <!-- Question Prompt -->
-        <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Question Prompt</label>
-          <textarea id="editorPrompt" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Enter question..."></textarea>
-        </div>
-
-        <!-- Question Type & Difficulty Timer Setting -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Question Type</label>
-            <select id="editorTypeSelect" onchange="toggleEditorOptionsVisibility()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-              <option value="multiple">Multiple Choice</option>
-              <option value="open">Open Question</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Default Timer (Seconds)
-            </label>
-            <div class="flex items-center space-x-2">
-              <input type="number" id="editorTimer" min="5" max="180" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-amber-400 font-bold focus:outline-none focus:border-amber-500" placeholder="15">
-              <span class="text-xs text-slate-400">sec</span>
-            </div>
-            <p class="text-[10px] text-slate-500 mt-1">Default length. The host starts the timer when the class is ready and can change it per question.</p>
-          </div>
-        </div>
-
-        <!-- Choices Options Container for Multiple Choice -->
-        <div id="editorChoicesBox" class="space-y-3">
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Answer Options & Correct Choice</label>
-          
-          <div class="space-y-2">
-            <div class="flex items-center space-x-3">
-              <input type="radio" name="correctChoiceRadio" value="0" id="radio0" class="w-4 h-4 text-amber-500 accent-amber-500">
-              <input type="text" id="choiceInput0" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Option A">
-            </div>
-            <div class="flex items-center space-x-3">
-              <input type="radio" name="correctChoiceRadio" value="1" id="radio1" class="w-4 h-4 text-amber-500 accent-amber-500">
-              <input type="text" id="choiceInput1" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Option B">
-            </div>
-            <div class="flex items-center space-x-3">
-              <input type="radio" name="correctChoiceRadio" value="2" id="radio2" class="w-4 h-4 text-amber-500 accent-amber-500">
-              <input type="text" id="choiceInput2" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Option C">
-            </div>
-            <div class="flex items-center space-x-3">
-              <input type="radio" name="correctChoiceRadio" value="3" id="radio3" class="w-4 h-4 text-amber-500 accent-amber-500">
-              <input type="text" id="choiceInput3" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Option D">
-            </div>
-          </div>
-        </div>
-
-        <!-- Open Question Answer Text Field -->
-        <div id="editorOpenAnswerBox" class="hidden">
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Expected Answer Key</label>
-          <input type="text" id="editorOpenAnswerText" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Target answer text">
-        </div>
-
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+        <button onclick="setMode('lobby')" class="text-xs text-rose-300 hover:text-rose-200 font-semibold">Lock all games (back to waiting room)</button>
+        <button id="modeCloseBtn" onclick="closeModeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Close</button>
       </div>
+    </div>
+  </div>
 
-      <!-- Modal Footer -->
-      <div class="border-t border-slate-800 pt-4 flex flex-wrap items-center justify-between gap-3">
-        <button onclick="resetAllQuestionsToDefault()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">
-          Reset All Questions to Default
-        </button>
-        <div class="flex items-center space-x-3">
-          <button onclick="closeEditorModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">
-            Cancel
-          </button>
-          <button onclick="saveQuestionEditor()" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-md shadow-amber-500/20">
-            Save Question
-          </button>
+  <!-- WAITING ROOM (players) -->
+  <div id="lobbyOverlay" class="fixed inset-0 z-[55] bg-slate-950 flex items-center justify-center p-4 hidden">
+    <div class="max-w-md w-full text-center space-y-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black text-2xl">GG</div>
+      <h2 class="text-2xl font-black text-white">Waiting Room</h2>
+      <p class="text-sm text-slate-400">Hang tight! Your host will open a game soon.</p>
+      <div class="space-y-3">
+        <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex items-center justify-between opacity-70">
+          <div class="text-left"><div class="font-bold text-slate-300">Jeopardy</div><div class="text-xs text-slate-500">2 players max</div></div>
+          <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">Locked</span>
+        </div>
+        <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex items-center justify-between opacity-70">
+          <div class="text-left"><div class="font-bold text-slate-300">Tile Race</div><div class="text-xs text-slate-500">Up to 60 players</div></div>
+          <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">Locked</span>
         </div>
       </div>
+      <button onclick="logoutRole()" class="text-xs text-slate-500 hover:text-slate-300">Leave</button>
+    </div>
+  </div>
 
+  <!-- JEOPARDY SEATS (players) -->
+  <div id="seatOverlay" class="fixed inset-0 z-[55] bg-slate-950 flex items-center justify-center p-4 hidden">
+    <div class="max-w-md w-full text-center space-y-5">
+      <h2 class="text-2xl font-black text-white">Jeopardy</h2>
+      <p class="text-sm text-slate-400">Only 2 players can play. Take a seat to join a team.</p>
+      <div id="seatBody" class="space-y-3"></div>
+      <button onclick="logoutRole()" class="text-xs text-slate-500 hover:text-slate-300">Leave</button>
+    </div>
+  </div>
+
+  <!-- TILE RACE SCREEN -->
+  <div id="raceView" class="fixed inset-0 z-[45] bg-slate-950 flex flex-col hidden">
+    <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-black flex items-center justify-center text-sm">TR</div>
+        <div><div class="text-sm font-black text-white">Tile Race</div><div id="raceSub" class="text-xs text-slate-400"></div></div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="sync-pill text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 font-semibold">Sync: connecting...</div>
+        <button onclick="openRaceEditor()" class="race-host-only hidden px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs">Edit Questions</button>
+        <button onclick="toggleTV(true)" class="race-host-only hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs border border-slate-700">TV Mode</button>
+        <button onclick="openModeModal()" class="race-host-only hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs border border-slate-700">Games</button>
+        <button onclick="logoutRole()" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 rounded-lg text-xs border border-slate-700">Leave</button>
+      </div>
+    </div>
+    <div id="raceBody" class="flex-1 overflow-y-auto p-4 md:p-6 max-w-6xl w-full mx-auto"></div>
+  </div>
+
+  <!-- TV MODE -->
+  <div id="tvOverlay" class="fixed inset-0 z-[70] bg-slate-950 hidden overflow-y-auto">
+    <button onclick="toggleTV(false)" class="fixed top-4 right-4 z-10 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs border border-slate-700">Exit TV Mode (Esc)</button>
+    <div id="tvBody" class="max-w-6xl mx-auto p-6 md:p-10"></div>
+  </div>
+
+  <!-- RACE QUESTION EDITOR -->
+  <div id="raceEditorModal" class="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-5xl max-h-[94vh] flex flex-col shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-black text-white">Tile Race Questions</h2>
+          <p class="text-xs text-slate-400 mt-1">Multiple choice only, up to 30 questions. Tick the circle next to the correct answer. Leave a choice blank to use fewer choices (minimum 2).</p>
+        </div>
+        <button onclick="closeRaceEditor()" class="text-slate-400 hover:text-white text-2xl leading-none px-2" aria-label="Close">&times;</button>
+      </div>
+      <div id="raceEditorList" class="flex-1 overflow-y-auto p-5 space-y-4"></div>
+      <div class="border-t border-slate-800 p-4 flex flex-wrap items-center justify-between gap-3">
+        <button onclick="addRaceRow()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700">+ Add Question</button>
+        <div class="flex items-center gap-3">
+          <button onclick="closeRaceEditor()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Cancel</button>
+          <button onclick="saveRaceEditor()" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs">Save Questions</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -729,12 +717,21 @@
     const HOST_PASSWORDS = ['yestobangs', 'gogoki'];
 
     function selectRole(role) {
-      if (role === 'host') {
-        document.getElementById('hostPwPanel').classList.remove('hidden');
-        document.getElementById('hostPwInput').focus();
-        return;
-      }
-      enterRole(role);
+      document.getElementById('hostPwPanel').classList.toggle('hidden', role !== 'host');
+      document.getElementById('playerNamePanel').classList.toggle('hidden', role !== 'player');
+      const el = document.getElementById(role === 'host' ? 'hostPwInput' : 'playerNameInput');
+      if (role === 'player' && !el.value) el.value = myName || '';
+      el.focus();
+    }
+
+    function submitPlayerName() {
+      const input = document.getElementById('playerNameInput');
+      const v = input.value.trim().slice(0, 20);
+      if (!v) { document.getElementById('playerNameError').classList.remove('hidden'); return; }
+      document.getElementById('playerNameError').classList.add('hidden');
+      myName = v;
+      try { sessionStorage.setItem('gogo_name', v); } catch (e) {}
+      enterRole('player');
     }
 
     function submitHostPassword() {
@@ -755,9 +752,9 @@
       const sessions = getActiveSessions();
       const warning = document.getElementById('loginWarning');
 
-      if (sessions[role] && sessions[role].tabId !== tabId) {
+      if (role === 'host' && sessions.host && sessions.host.tabId !== tabId) {
         warning.classList.remove('hidden');
-        warning.innerText = `The ${role.toUpperCase()} role is currently active in another tab!`;
+        warning.innerText = 'The HOST role is currently active in another tab!';
         return;
       }
 
@@ -765,20 +762,29 @@
       currentRole = role;
       registerSession(role);
       document.getElementById('loginModal').classList.add('hidden');
-
       updateRoleUI();
       renderBoard();
-      syncStateToLocalStorage();
+
       if (role === 'host') {
-        const go = () => { broadcastBoard(false); broadcastState(); if (gameState.timerRunning) startTimer(); };
+        // Every host session starts with all games locked until the host opens one
+        gameState.mode = 'lobby';
+        gameState.seats = { group1: null, group2: null };
+        modeOpen = false;
+        syncStateToLocalStorage();
+        const go = () => { broadcastState(); applyViews(); };
         if (FIREBASE_DB_URL) fetch(BUS_URL, { method: 'DELETE' }).then(go, go); else go();
+      } else {
+        sendMsg({ type: 'HELLO' });
+        applyViews();
       }
-      else sendMsg({ type: 'HELLO' });
     }
 
     function logoutRole() {
       unregisterSession();
       currentRole = null;
+      tvOpen = false;
+      document.getElementById('tvOverlay').classList.add('hidden');
+      applyViews();
       document.getElementById('loginModal').classList.remove('hidden');
       updateLoginBadges();
     }
@@ -790,7 +796,7 @@
       const g1BuzzContainer = document.getElementById('g1BuzzBtnContainer');
       const g2BuzzContainer = document.getElementById('g2BuzzBtnContainer');
 
-      ['g1AdjustBtns', 'g2AdjustBtns'].forEach(id => document.getElementById(id).classList.toggle('hidden', currentRole !== 'host'));
+      ['g1AdjustBtns', 'g2AdjustBtns', 'hostModeBtn', 'hostTvBtn'].forEach(id => document.getElementById(id).classList.toggle('hidden', currentRole !== 'host'));
       if (currentRole === 'host') {
         badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 mr-2"></span> <span class="font-bold text-amber-400">Host / Admin</span>`;
         hostControls.classList.remove('hidden');
@@ -812,6 +818,13 @@
         hostEditorBtn.classList.add('hidden');
         g1BuzzContainer.classList.add('hidden');
         g2BuzzContainer.classList.remove('hidden');
+      } else if (currentRole === 'player') {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400 mr-2"></span> <span class="font-bold text-slate-300">Player</span>`;
+        hostControls.classList.add('hidden');
+        hostControls.classList.remove('flex');
+        hostEditorBtn.classList.add('hidden');
+        g1BuzzContainer.classList.add('hidden');
+        g2BuzzContainer.classList.add('hidden');
       }
     }
 
@@ -1013,6 +1026,9 @@
       const g2Status = document.getElementById('g2BuzzStatus');
       document.getElementById('scoreGroup1').innerText = `Points: ${gameState.scores.group1}`;
       document.getElementById('scoreGroup2').innerText = `Points: ${gameState.scores.group2}`;
+      const sd = gameState.seats || {};
+      document.getElementById('g1SubText').innerText = sd.group1 ? sd.group1.name : "Spacebar / 'A' Key";
+      document.getElementById('g2SubText').innerText = sd.group2 ? sd.group2.name : "Spacebar / 'L' Key";
 
       if (!gameState.activeTile && gameState.pickPhase) {
         const t = gameState.pickTeam;
@@ -1372,17 +1388,7 @@
 
     function openEditorModal() {
       if (currentRole !== 'host') return;
-      
-      const catSelect = document.getElementById('editorCategorySelect');
-      catSelect.innerHTML = '';
-      gameState.board.forEach((cat, idx) => {
-        const opt = document.createElement('option');
-        opt.value = idx;
-        opt.innerText = cat.title;
-        catSelect.appendChild(opt);
-      });
-
-      loadSelectedEditorQuestion();
+      buildEditorGrid();
       document.getElementById('editorModal').classList.remove('hidden');
     }
 
@@ -1390,81 +1396,78 @@
       document.getElementById('editorModal').classList.add('hidden');
     }
 
-    function loadSelectedEditorQuestion() {
-      const catIdx = parseInt(document.getElementById('editorCategorySelect').value) || 0;
-      const tierVal = parseInt(document.getElementById('editorTierSelect').value) || 100;
-      
-      const qIdx = [100, 200, 300, 400, 500].indexOf(tierVal);
-      const cat = gameState.board[catIdx];
-      const q = cat.questions[qIdx];
+    function escAttr(t) {
+      return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
 
-      document.getElementById('editorCategoryTitle').value = cat.title;
-      document.getElementById('editorPrompt').value = q.prompt;
-      document.getElementById('editorTypeSelect').value = q.type;
-      document.getElementById('editorTimer').value = q.timer || 15;
+    function buildEditorGrid() {
+      const inp = 'w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500';
+      document.getElementById('editorGrid').innerHTML = gameState.board.map((cat, ci) => {
+        const rows = cat.questions.map((q, qi) => {
+          const k = ci + '_' + qi;
+          const multi = q.type === 'multiple';
+          const ch = q.choices || [];
+          const mc = [0, 1, 2, 3].map(i => `
+            <label class="flex items-center gap-2">
+              <input type="radio" name="ed_correct_${k}" value="${i}" ${(q.correct || 0) === i ? 'checked' : ''} class="accent-amber-500">
+              <span class="text-xs text-slate-500 w-3">${'ABCD'[i]}</span>
+              <input id="ed_ch_${k}_${i}" value="${escAttr(ch[i])}" class="${inp}">
+            </label>`).join('');
+          return `
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start border-t border-slate-800 pt-3">
+              <div class="lg:col-span-1 text-amber-400 font-black text-sm">${q.val}</div>
+              <div class="lg:col-span-4"><textarea id="ed_prompt_${k}" rows="4" class="${inp}">${escAttr(q.prompt)}</textarea></div>
+              <div class="lg:col-span-2 space-y-2">
+                <select id="ed_type_${k}" onchange="toggleRowType('${k}', this.value)" class="${inp}">
+                  <option value="multiple" ${multi ? 'selected' : ''}>Multiple choice</option>
+                  <option value="open" ${multi ? '' : 'selected'}>Open answer</option>
+                </select>
+                <div class="flex items-center gap-2"><input id="ed_timer_${k}" type="number" min="5" max="300" value="${q.timer || 15}" class="${inp}"><span class="text-xs text-slate-500">sec</span></div>
+              </div>
+              <div class="lg:col-span-5">
+                <div id="ed_mc_${k}" class="space-y-1.5 ${multi ? '' : 'hidden'}">${mc}</div>
+                <div id="ed_open_${k}" class="${multi ? 'hidden' : ''}"><input id="ed_open_in_${k}" value="${escAttr(q.answer)}" placeholder="Expected answer" class="${inp}"></div>
+              </div>
+            </div>`;
+        }).join('');
+        return `
+          <section class="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Category ${ci + 1}</span>
+              <input id="ed_title_${ci}" value="${escAttr(cat.title)}" class="${inp} font-bold text-amber-400">
+            </div>${rows}
+          </section>`;
+      }).join('');
+    }
 
-      // clear leftovers from the previously loaded question first
-      for (let i = 0; i < 4; i++) document.getElementById(`choiceInput${i}`).value = '';
-      document.getElementById('editorOpenAnswerText').value = '';
-      document.querySelectorAll('input[name="correctChoiceRadio"]').forEach(r => r.checked = false);
-      if (q.type === 'multiple') {
-        (q.choices || []).forEach((ch, idx) => {
-          const inp = document.getElementById(`choiceInput${idx}`);
-          if (inp) inp.value = ch;
+    function toggleRowType(k, type) {
+      document.getElementById('ed_mc_' + k).classList.toggle('hidden', type !== 'multiple');
+      document.getElementById('ed_open_' + k).classList.toggle('hidden', type === 'multiple');
+    }
+
+    function saveEditorGrid() {
+      const v = id => document.getElementById(id).value.trim();
+      const board = JSON.parse(JSON.stringify(gameState.board));
+      board.forEach((cat, ci) => {
+        cat.title = v('ed_title_' + ci) || cat.title;
+        cat.questions.forEach((q, qi) => {
+          const k = ci + '_' + qi;
+          q.prompt = v('ed_prompt_' + k) || q.prompt;
+          q.type = v('ed_type_' + k);
+          q.timer = Math.max(5, Math.min(300, parseInt(v('ed_timer_' + k)) || 15));
+          if (q.type === 'multiple') {
+            const vals = [0, 1, 2, 3].map(i => v(`ed_ch_${k}_${i}`));
+            let last = 3;
+            while (last >= 0 && !vals[last]) last--;
+            q.choices = vals.slice(0, Math.max(last + 1, 2)).map((t, i) => t || 'Choice ' + 'ABCD'[i]);
+            const sel = document.querySelector(`input[name="ed_correct_${k}"]:checked`);
+            q.correct = Math.min(sel ? parseInt(sel.value) : 0, q.choices.length - 1);
+          } else {
+            q.answer = v('ed_open_in_' + k) || q.answer || '';
+          }
         });
-        const radio = document.getElementById(`radio${q.correct || 0}`);
-        if (radio) radio.checked = true;
-      } else {
-        document.getElementById('editorOpenAnswerText').value = q.answer || '';
-      }
-
-      toggleEditorOptionsVisibility();
-    }
-
-    function toggleEditorOptionsVisibility() {
-      const type = document.getElementById('editorTypeSelect').value;
-      const choicesBox = document.getElementById('editorChoicesBox');
-      const openBox = document.getElementById('editorOpenAnswerBox');
-
-      if (type === 'multiple') {
-        choicesBox.classList.remove('hidden');
-        openBox.classList.add('hidden');
-      } else {
-        choicesBox.classList.add('hidden');
-        openBox.classList.remove('hidden');
-      }
-    }
-
-    function saveQuestionEditor() {
-      const catIdx = parseInt(document.getElementById('editorCategorySelect').value) || 0;
-      const tierVal = parseInt(document.getElementById('editorTierSelect').value) || 100;
-      const qIdx = [100, 200, 300, 400, 500].indexOf(tierVal);
-
-      const newTitle = document.getElementById('editorCategoryTitle').value.trim() || `Category ${catIdx + 1}`;
-      const newPrompt = document.getElementById('editorPrompt').value.trim() || 'Default Question Prompt';
-      const newType = document.getElementById('editorTypeSelect').value;
-      const newTimer = parseInt(document.getElementById('editorTimer').value) || 15;
-
-      gameState.board[catIdx].title = newTitle;
-
-      const q = gameState.board[catIdx].questions[qIdx];
-      q.prompt = newPrompt;
-      q.type = newType;
-      q.timer = newTimer;
-
-      if (newType === 'multiple') {
-        q.choices = [
-          document.getElementById('choiceInput0').value || 'Choice A',
-          document.getElementById('choiceInput1').value || 'Choice B',
-          document.getElementById('choiceInput2').value || 'Choice C',
-          document.getElementById('choiceInput3').value || 'Choice D',
-        ];
-        const selectedRadio = document.querySelector('input[name="correctChoiceRadio"]:checked');
-        q.correct = selectedRadio ? parseInt(selectedRadio.value) : 0;
-      } else {
-        q.answer = document.getElementById('editorOpenAnswerText').value || 'Answer Key';
-      }
-
+      });
+      gameState.board = board;
       syncStateToLocalStorage();
       broadcastState();
       broadcastBoard(true);
@@ -1510,13 +1513,13 @@
     const BUS_URL = FIREBASE_DB_URL.replace(/\/$/, '') + '/arcade_bus.json';
 
     function setSync(kind, text) {
-      const el = document.getElementById('syncPill');
-      if (!el) return;
-      el.innerText = 'Sync: ' + text;
-      el.className = 'text-xs px-2.5 py-1.5 rounded-lg border font-semibold ' + (kind === 'ok'
-        ? 'border-emerald-700 bg-emerald-950/60 text-emerald-300'
-        : kind === 'err' ? 'border-rose-700 bg-rose-950/60 text-rose-300'
-        : 'border-slate-700 bg-slate-800 text-slate-400');
+      document.querySelectorAll('.sync-pill').forEach(el => {
+        el.innerText = 'Sync: ' + text;
+        el.className = 'sync-pill text-xs px-2.5 py-1.5 rounded-lg border font-semibold ' + (kind === 'ok'
+          ? 'border-emerald-700 bg-emerald-950/60 text-emerald-300'
+          : kind === 'err' ? 'border-rose-700 bg-rose-950/60 text-rose-300'
+          : 'border-slate-700 bg-slate-800 text-slate-400');
+      });
     }
 
     function sendMsg(m) {
@@ -1564,9 +1567,12 @@
     // Host sends the game state (small); board questions are sent separately.
     function broadcastState() {
       if (currentRole !== 'host') return;
+      syncRacePublic();
       gameState.rev = Math.max(Date.now(), (gameState.rev || 0) + 1);
       const { board, ...st } = gameState;
       sendMsg({ type: 'STATE', state: st });
+      renderTV();
+      if (modeOf() === 'race') renderRace();
     }
 
     function broadcastBoard(all) {
@@ -1581,6 +1587,7 @@
     function applyState(st) {
       if (st.rev && gameState.rev && st.rev < gameState.rev) return;
       gameState = Object.assign({}, st, { board: gameState.board });
+      applyViews();
       renderBoard();
       updateMainBoardStatus();
       if (gameState.timerRunning) startTimer(); else stopTimer();
@@ -1606,7 +1613,12 @@
         renderBoard();
         if (gameState.activeTile) updateModalView();
       }
-      else if (m.type === 'HELLO' && isHost) { broadcastBoard(false); broadcastState(); }
+      else if (m.type === 'HELLO' && isHost) scheduleHello();
+      else if (m.type === 'SEAT' && isHost) hostSeat(m);
+      else if (m.type === 'RJOIN' && isHost) raceJoin(m);
+      else if (m.type === 'RA' && isHost) raceAnswer(m);
+      else if (m.type === 'RQ' && !isHost) racePlayerQuestion(m);
+      else if (m.type === 'RR' && !isHost) racePlayerResults(m);
       else if (m.type === 'BUZZ' && isHost) hostBuzz(m.team);
       else if (m.type === 'PICK' && isHost) { if (m.team === gameState.pickTeam && !gameState.activeTile && !gameState.answeredTiles[m.catIdx + '_' + m.qIdx]) hostOpenTile(m.catIdx, m.qIdx); }
       else if (m.type === 'ANSWER' && isHost) hostAnswer(m.team, m.idx);
@@ -1625,7 +1637,7 @@
           playerBuzz('group1');
         } else if (currentRole === 'group2') {
           playerBuzz('group2');
-        } else if (currentRole === 'host') {
+        } else if (currentRole === 'host' && modeOf() === 'jeopardy') {
           giveGoSignal();
         }
       } else if (e.key === 'a' || e.key === 'A') {
@@ -1640,6 +1652,426 @@
       unregisterSession();
     });
 
+/* ================= GAME MODES, SEATS & LOBBY ================= */
+    const RACE_CAP = 60;
+    let myPid = sessionStorage.getItem('gogo_pid') || ('p' + Math.random().toString(36).slice(2, 8));
+    try { sessionStorage.setItem('gogo_pid', myPid); } catch (e) {}
+    let myName = sessionStorage.getItem('gogo_name') || '';
+    let modeOpen = false;
+    let tvOpen = false;
+    let helloTimer = null, stateTimer = null, raceRT = null;
+
+    function modeOf() { return gameState.mode || 'lobby'; }
+
+    function scheduleHello() {
+      if (helloTimer) return;
+      helloTimer = setTimeout(() => {
+        helloTimer = null;
+        if (modeOf() === 'jeopardy') broadcastBoard(false);
+        broadcastState();
+        resendRaceQuestion();
+      }, 1200);
+    }
+
+    function scheduleState() {
+      if (stateTimer) return;
+      stateTimer = setTimeout(() => { stateTimer = null; broadcastState(); }, 2000);
+    }
+
+    function setMode(mode) {
+      if (currentRole !== 'host') return;
+      if (gameState.activeTile) {
+        stopTimer();
+        Object.assign(gameState, { activeTile: null, goSignal: false, buzzedTeam: null, timerRunning: false, banner: null, pickPhase: false, pickTeam: null });
+        document.getElementById('questionModal').classList.add('hidden');
+      }
+      gameState.mode = mode;
+      modeOpen = false;
+      syncStateToLocalStorage();
+      if (mode === 'jeopardy') { broadcastBoard(false); renderBoard(); updateMainBoardStatus(); }
+      broadcastState();
+      applyViews();
+    }
+    function openModeModal() { modeOpen = true; applyViews(); }
+    function closeModeModal() { modeOpen = false; applyViews(); }
+
+    function syncSeatRole() {
+      if (!currentRole || currentRole === 'host') return;
+      let nr = 'player';
+      if (modeOf() === 'jeopardy') {
+        const s = gameState.seats || {};
+        if (s.group1 && s.group1.pid === myPid) nr = 'group1';
+        else if (s.group2 && s.group2.pid === myPid) nr = 'group2';
+      }
+      if (nr !== currentRole) { currentRole = nr; updateRoleUI(); }
+    }
+
+    function applyViews() {
+      const show = (id, on) => document.getElementById(id).classList.toggle('hidden', !on);
+      const r = currentRole, host = r === 'host', m = modeOf(), isPlayer = !!r && !host;
+      if (isPlayer) syncSeatRole();
+      show('modeModal', host && (m === 'lobby' || modeOpen));
+      show('modeCloseBtn', m !== 'lobby');
+      show('lobbyOverlay', isPlayer && m === 'lobby');
+      show('seatOverlay', isPlayer && m === 'jeopardy' && currentRole === 'player');
+      show('raceView', !!r && m === 'race');
+      document.querySelectorAll('.race-host-only').forEach(b => b.classList.toggle('hidden', !host));
+      if (isPlayer && m === 'jeopardy' && currentRole === 'player') renderSeats();
+      if (isPlayer && m === 'race') {
+        if ((gameState.race || {}).phase === 'idle') Object.assign(myRace, { q: null, answered: null, result: null, score: 0, correct: 0, expired: false });
+        ensureRaceJoin();
+      }
+      if (r && m === 'race') renderRace();
+      renderTV();
+    }
+
+    function renderSeats() {
+      const s = gameState.seats || {};
+      const mine = (s.group1 && s.group1.pid === myPid) || (s.group2 && s.group2.pid === myPid);
+      const card = (g, label, tc, bc) => {
+        const t = s[g];
+        return `<div class="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex items-center justify-between gap-3">
+          <div class="text-left"><div class="font-bold ${tc}">${label}</div><div class="text-xs text-slate-500">${t ? 'Taken by ' + escAttr(t.name) : 'Open seat'}</div></div>
+          ${t ? '<span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">Taken</span>' : `<button onclick="takeSeat('${g}')" class="px-4 py-2 ${bc} text-slate-950 font-bold rounded-xl text-xs">Take seat</button>`}
+        </div>`;
+      };
+      const full = s.group1 && s.group2 && !mine;
+      document.getElementById('seatBody').innerHTML =
+        card('group1', 'Group 1', 'text-cyan-400', 'bg-cyan-500 hover:bg-cyan-400') +
+        card('group2', 'Group 2', 'text-emerald-400', 'bg-emerald-500 hover:bg-emerald-400') +
+        (full ? '<p class="text-sm text-amber-300">Jeopardy is full (2 players max). Please wait for the next game.</p>' : '');
+    }
+
+    function takeSeat(g) { sendMsg({ type: 'SEAT', pid: myPid, name: myName, group: g }); }
+
+    function hostSeat(m) {
+      if (modeOf() !== 'jeopardy' || !['group1', 'group2'].includes(m.group)) return;
+      const s = gameState.seats = gameState.seats || { group1: null, group2: null };
+      const other = m.group === 'group1' ? 'group2' : 'group1';
+      if (s[m.group] && s[m.group].pid !== m.pid) return;
+      if (s[other] && s[other].pid === m.pid) s[other] = null;
+      s[m.group] = { pid: m.pid, name: String(m.name || 'Player').slice(0, 20) };
+      syncStateToLocalStorage();
+      broadcastState();
+      updateMainBoardStatus();
+    }
+
+    function freeSeat(g) {
+      if (currentRole !== 'host' || !gameState.seats) return;
+      gameState.seats[g] = null;
+      syncStateToLocalStorage();
+      broadcastState();
+      updateMainBoardStatus();
+    }
+
+    /* ================= TILE RACE ================= */
+    function defaultRaceQs() {
+      const out = [];
+      DEFAULT_BOARD_DATA.forEach(c => c.questions.forEach(q => {
+        if (q.type === 'multiple') out.push({ prompt: q.prompt, choices: q.choices.slice(), correct: q.correct || 0, timer: q.timer || 20 });
+      }));
+      return out.slice(0, 30);
+    }
+    function loadRaceQs() {
+      try { const r = JSON.parse(localStorage.getItem('gogo_race_questions')); if (Array.isArray(r) && r.length) return r; } catch (e) {}
+      return defaultRaceQs();
+    }
+    let raceQs = loadRaceQs();
+    let raceH = { players: {}, answers: {}, qi: -1, phase: 'idle', endsAt: 0, tEnd: null };
+    let myRace = { q: null, startedAt: 0, el: 0, answered: null, result: null, score: 0, correct: 0, gained: 0, joinSent: 0, expired: false };
+
+    function syncRacePublic() {
+      gameState.race = { phase: raceH.phase, qi: raceH.qi, n: raceQs.length, players: Object.keys(raceH.players).length, ids: Object.keys(raceH.players) };
+    }
+    function renderRaceSoon() {
+      if (raceRT) return;
+      raceRT = setTimeout(() => { raceRT = null; renderRace(); renderTV(); }, 300);
+    }
+    function raceRanked() {
+      return Object.keys(raceH.players).map(id => Object.assign({ pid: id }, raceH.players[id]))
+        .sort((a, b) => b.score - a.score || b.correct - a.correct || a.name.localeCompare(b.name));
+    }
+
+    // ---- host side ----
+    function raceJoin(m) {
+      if (modeOf() !== 'race' || !m.pid) return;
+      const name = String(m.name || 'Player').slice(0, 20);
+      const p = raceH.players[m.pid];
+      if (p) { p.name = name; return; }
+      if (Object.keys(raceH.players).length >= RACE_CAP) return;
+      raceH.players[m.pid] = { name, score: 0, correct: 0, lastPts: 0 };
+      scheduleState();
+      renderRaceSoon();
+    }
+    function raceStart() {
+      if (currentRole !== 'host' || raceH.phase !== 'idle') return;
+      Object.values(raceH.players).forEach(p => { p.score = 0; p.correct = 0; p.lastPts = 0; });
+      raceH.qi = -1;
+      raceNext();
+    }
+    function raceNext() {
+      if (currentRole !== 'host' || raceH.phase === 'question') return;
+      raceH.qi++;
+      if (raceH.qi >= raceQs.length) { raceFinish(); return; }
+      const q = raceQs[raceH.qi], dur = q.timer || 20;
+      raceH.answers = {};
+      raceH.phase = 'question';
+      raceH.endsAt = Date.now() + dur * 1000;
+      clearTimeout(raceH.tEnd);
+      raceH.tEnd = setTimeout(raceEnd, dur * 1000 + 1500);
+      playSound('go');
+      sendQuestion(0);
+      broadcastState();
+    }
+    function sendQuestion(el) {
+      const q = raceQs[raceH.qi];
+      sendMsg({ type: 'RQ', i: raceH.qi, n: raceQs.length, prompt: q.prompt, choices: q.choices, dur: q.timer || 20, el });
+    }
+    function resendRaceQuestion() {
+      if (currentRole !== 'host' || raceH.phase !== 'question' || Date.now() >= raceH.endsAt) return;
+      const dur = (raceQs[raceH.qi].timer || 20) * 1000;
+      sendQuestion(Math.max(0, dur - (raceH.endsAt - Date.now())));
+    }
+    function raceAnswer(m) {
+      const p = raceH.players[m.pid];
+      if (!p || raceH.phase !== 'question' || m.i !== raceH.qi || raceH.answers[m.pid] || Date.now() > raceH.endsAt + 2500) return;
+      const dur = (raceQs[raceH.qi].timer || 20) * 1000;
+      raceH.answers[m.pid] = { a: m.a, ms: Math.max(0, Math.min(dur, parseInt(m.ms) || dur)) };
+      if (Object.keys(raceH.answers).length >= Object.keys(raceH.players).length) raceEnd(); else renderRaceSoon();
+    }
+    function raceResultsMsg(final) {
+      const sc = {};
+      Object.keys(raceH.players).forEach(id => { const p = raceH.players[id]; sc[id] = [p.score, p.correct]; });
+      const q = raceQs[Math.min(Math.max(raceH.qi, 0), raceQs.length - 1)];
+      return { type: 'RR', i: Math.min(Math.max(raceH.qi, 0), raceQs.length - 1), n: raceQs.length, correct: q.correct, sc, final: !!final,
+        top: raceRanked().slice(0, 5).map(p => [p.name, p.score, p.correct]) };
+    }
+    function raceEnd() {
+      if (currentRole !== 'host' || raceH.phase !== 'question') return;
+      clearTimeout(raceH.tEnd);
+      const q = raceQs[raceH.qi], dur = (q.timer || 20) * 1000;
+      Object.keys(raceH.players).forEach(id => {
+        const p = raceH.players[id], a = raceH.answers[id];
+        p.lastPts = 0;
+        if (a && a.a === q.correct) { p.lastPts = 100 + Math.round(100 * Math.max(0, 1 - a.ms / dur)); p.score += p.lastPts; p.correct++; }
+      });
+      raceH.phase = 'results';
+      sendMsg(raceResultsMsg(false));
+      playSound('correct');
+      broadcastState();
+    }
+    function raceFinish() {
+      clearTimeout(raceH.tEnd);
+      raceH.phase = 'final';
+      sendMsg(raceResultsMsg(true));
+      broadcastState();
+    }
+    function raceReset() {
+      if (currentRole !== 'host') return;
+      clearTimeout(raceH.tEnd);
+      Object.values(raceH.players).forEach(p => { p.score = 0; p.correct = 0; p.lastPts = 0; });
+      raceH.phase = 'idle'; raceH.qi = -1; raceH.answers = {};
+      broadcastState();
+    }
+
+    // ---- player side ----
+    function ensureRaceJoin() {
+      const ids = (gameState.race || {}).ids || [];
+      if (ids.includes(myPid) || ids.length >= RACE_CAP || Date.now() - myRace.joinSent < 3000) return;
+      myRace.joinSent = Date.now();
+      sendMsg({ type: 'RJOIN', pid: myPid, name: myName });
+    }
+    function racePlayerQuestion(m) {
+      if (myRace.q && myRace.q.i === m.i) return;
+      myRace.q = { i: m.i, n: m.n, prompt: m.prompt, choices: m.choices, dur: m.dur };
+      myRace.startedAt = Date.now(); myRace.el = m.el || 0;
+      myRace.answered = null; myRace.expired = false; myRace.result = null;
+      if (currentRole && modeOf() === 'race') renderRace();
+    }
+    function racePlayerResults(m) {
+      if (myRace.result && myRace.result.i === m.i && myRace.result.final === m.final) return;
+      const mine = m.sc[myPid];
+      myRace.gained = mine ? mine[0] - myRace.score : 0;
+      if (mine) { myRace.score = mine[0]; myRace.correct = mine[1]; }
+      myRace.result = m;
+      if (currentRole && modeOf() === 'race') renderRace();
+    }
+    function raceChoose(i) {
+      const q = myRace.q;
+      if (!q || myRace.answered !== null || myRace.expired) return;
+      const ms = myRace.el + (Date.now() - myRace.startedAt);
+      if (ms > q.dur * 1000) return;
+      myRace.answered = i;
+      sendMsg({ type: 'RA', pid: myPid, i: q.i, a: i, ms });
+      renderRace();
+    }
+
+    function raceTick() {
+      if (modeOf() !== 'race' || !currentRole) return;
+      if (currentRole === 'host') {
+        const el = document.getElementById('raceCountdown');
+        if (el && raceH.phase === 'question') el.innerText = Math.max(0, Math.ceil((raceH.endsAt - Date.now()) / 1000)) + 's';
+      } else if (myRace.q && (gameState.race || {}).phase === 'question' && myRace.q.i === gameState.race.qi) {
+        const total = myRace.q.dur * 1000, left = Math.max(0, total - (myRace.el + Date.now() - myRace.startedAt));
+        const bar = document.getElementById('raceBar'), secs = document.getElementById('raceSecs');
+        if (bar) bar.style.width = (100 * left / total) + '%';
+        if (secs) secs.innerText = Math.ceil(left / 1000) + 's';
+        if (left <= 0 && myRace.answered === null && !myRace.expired) { myRace.expired = true; renderRace(); }
+      }
+    }
+    setInterval(raceTick, 250);
+
+    function renderRace() {
+      if (!currentRole || modeOf() !== 'race') return;
+      document.getElementById('raceSub').innerText = currentRole === 'host'
+        ? `Host - ${Object.keys(raceH.players).length} / ${RACE_CAP} players` : `Player - ${myName}`;
+      document.getElementById('raceBody').innerHTML = currentRole === 'host' ? raceHostHTML() : racePlayerHTML();
+      raceTick();
+    }
+
+    function raceCard(title, text) {
+      return `<div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-2"><div class="text-xl font-black text-white">${title}</div><div class="text-sm text-slate-400">${text}</div></div>`;
+    }
+    function raceTopList(top, me) {
+      return top.map((t, i) => `<div class="flex items-center justify-between gap-3 px-3 py-2 rounded-xl ${i === 0 ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-slate-900 border border-slate-800'}">
+        <span class="text-sm font-bold ${i === 0 ? 'text-amber-400' : 'text-slate-300'}">${i + 1}. ${escAttr(t[0])}</span><span class="text-xs text-slate-400">${t[2]} tiles</span><span class="text-sm font-black text-white">${t[1]}</span></div>`).join('');
+    }
+
+    function racePlayerHTML() {
+      const r = gameState.race || {}, ph = r.phase || 'idle', ids = r.ids || [], n = r.n || raceQs.length;
+      const joined = ids.includes(myPid), full = !joined && ids.length >= RACE_CAP;
+      const tiles = Array.from({ length: n }, (_, i) => `<span class="w-5 h-5 rounded ${i < myRace.correct ? 'bg-emerald-400' : 'bg-slate-800 border border-slate-700'}"></span>`).join('');
+      const head = `<div class="space-y-3 mb-5"><div class="flex items-center justify-between"><div class="text-sm font-bold text-white">${escAttr(myName)}</div><div class="text-sm font-black text-cyan-300">${myRace.score} pts</div></div><div class="flex flex-wrap gap-1.5">${tiles}</div></div>`;
+      let body = '';
+      const res = myRace.result;
+      if (full) body = raceCard('Race is full', `The race already has ${RACE_CAP} players. Please wait for the next game.`);
+      else if (ph === 'idle') body = raceCard(`You're in, ${escAttr(myName)}!`, `Waiting for the host to start the race... ${r.players || 0} player(s) joined.`);
+      else if (ph === 'question') {
+        const q = myRace.q;
+        if (!q || q.i !== r.qi) body = raceCard('Get ready!', 'The next question is loading...');
+        else {
+          const locked = myRace.answered !== null || myRace.expired;
+          body = `<div class="space-y-4">
+            <div class="flex items-center justify-between text-xs text-slate-400"><span>Question ${q.i + 1} of ${q.n}</span><span id="raceSecs" class="font-bold text-amber-400">${q.dur}s</span></div>
+            <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div id="raceBar" class="h-full bg-amber-500" style="width:100%"></div></div>
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 text-lg font-bold text-white">${escAttr(q.prompt)}</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${q.choices.map((c, i) => `<button onclick="raceChoose(${i})" ${locked ? 'disabled' : ''} class="text-left p-4 rounded-2xl border-2 text-sm font-semibold text-white transition ${myRace.answered === i ? 'border-amber-400 bg-amber-500/20' : 'border-slate-700 bg-slate-900 hover:border-cyan-500/60'} ${locked && myRace.answered !== i ? 'opacity-50' : ''}"><span class="text-amber-400 font-black mr-2">${'ABCD'[i]}</span>${escAttr(c)}</button>`).join('')}</div>
+            <div class="text-center text-sm text-amber-300 font-semibold">${myRace.answered !== null ? 'Answer locked in! Waiting for time to end...' : myRace.expired ? "Time's up!" : ''}</div></div>`;
+        }
+      } else if (res && (ph === 'final' || res.i === r.qi)) {
+        const mine = (res.sc[myPid] || [0])[0], rank = 1 + Object.values(res.sc).filter(v => v[0] > mine).length, total = Object.keys(res.sc).length;
+        const q = myRace.q && myRace.q.i === res.i ? myRace.q : null;
+        const right = myRace.answered === res.correct;
+        const banner = ph === 'final'
+          ? `<div class="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center"><div class="text-xl font-black text-amber-300">Race finished!</div><div class="text-sm text-slate-300 mt-1">You placed #${rank} of ${total} with ${mine} points.</div></div>`
+          : `<div class="p-5 rounded-2xl text-center border ${right ? 'bg-emerald-950/50 border-emerald-700' : 'bg-rose-950/50 border-rose-800'}"><div class="text-xl font-black ${right ? 'text-emerald-300' : 'text-rose-300'}">${right ? 'Correct! +' + myRace.gained + ' pts' : (myRace.answered === null ? "Time's up!" : 'Not quite')}</div>
+              <div class="text-sm text-slate-300 mt-1">Correct answer: ${'ABCD'[res.correct]}${q ? '. ' + escAttr(q.choices[res.correct]) : ''}</div><div class="text-xs text-slate-400 mt-1">You are #${rank} of ${total}</div></div>`;
+        body = `<div class="space-y-4">${banner}<div class="space-y-2">${raceTopList(res.top)}</div>${ph === 'final' ? '' : '<div class="text-center text-xs text-slate-500">Waiting for the next question...</div>'}</div>`;
+      } else body = raceCard('Hang on...', 'Waiting for the host.');
+      return head + body;
+    }
+
+    function raceHostHTML() {
+      const ph = raceH.phase, ids = Object.keys(raceH.players), np = ids.length, n = raceQs.length, q = raceQs[raceH.qi];
+      const amber = 'bg-amber-500 hover:bg-amber-400 text-slate-950', gray = 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700';
+      const btn = (label, fn, cls, dis) => `<button onclick="${fn}" ${dis ? 'disabled' : ''} class="px-4 py-2 rounded-xl text-xs font-bold transition ${cls} ${dis ? 'opacity-40 cursor-not-allowed' : ''}">${label}</button>`;
+      const counts = [0, 0, 0, 0, 0, 0];
+      Object.values(raceH.answers).forEach(a => { if (a.a >= 0 && a.a < 6) counts[a.a]++; });
+      const choicesHTML = q ? q.choices.map((c, i) => `<div class="p-3 rounded-xl border text-sm ${ph === 'results' && i === q.correct ? 'border-emerald-500 bg-emerald-950/40 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-200'} flex items-center justify-between gap-3"><span><b class="text-amber-400 mr-2">${'ABCD'[i]}</b>${escAttr(c)}</span>${ph === 'results' ? `<span class="text-xs text-slate-400">${counts[i]} answered</span>` : ''}</div>`).join('') : '';
+      let main = '', actions = '';
+      if (ph === 'idle') {
+        const chips = ids.map(id => `<span class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-200">${escAttr(raceH.players[id].name)}</span>`).join('');
+        main = `<div class="space-y-3"><div class="text-lg font-black text-white">Lobby</div><div class="text-sm text-slate-400">${np} player${np === 1 ? '' : 's'} joined (max ${RACE_CAP}). ${n} question${n === 1 ? '' : 's'} ready.</div><div class="flex flex-wrap gap-2">${chips || '<span class="text-xs text-slate-500">Waiting for players to join...</span>'}</div></div>`;
+        actions = btn('Start Race', 'raceStart()', amber, !np || !n);
+      } else if (ph === 'question') {
+        main = `<div class="space-y-3"><div class="flex items-center justify-between text-xs text-slate-400"><span>Question ${raceH.qi + 1} of ${n}</span><span id="raceCountdown" class="font-bold text-amber-400"></span></div><div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-lg font-bold text-white">${escAttr(q.prompt)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${choicesHTML}</div><div class="text-sm text-slate-400">${Object.keys(raceH.answers).length} / ${np} answered</div></div>`;
+        actions = btn('End Question Now', 'raceEnd()', gray);
+      } else if (ph === 'results') {
+        main = `<div class="space-y-3"><div class="text-xs text-slate-400">Question ${raceH.qi + 1} of ${n} - results</div><div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-lg font-bold text-white">${escAttr(q.prompt)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${choicesHTML}</div></div>`;
+        actions = btn(raceH.qi + 1 >= n ? 'Show Final Results' : 'Next Question', 'raceNext()', amber);
+      } else {
+        const w = raceRanked()[0];
+        main = `<div class="p-8 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center space-y-2"><div class="text-sm text-amber-300 font-bold uppercase tracking-wider">Race finished</div><div class="text-3xl font-black text-white">${w ? escAttr(w.name) : 'No winner'}</div><div class="text-sm text-slate-300">${w ? w.score + ' points - ' + w.correct + '/' + n + ' tiles' : ''}</div></div>`;
+        actions = btn('Reset Race', 'raceReset()', amber);
+      }
+      if (ph !== 'idle' && ph !== 'final') actions += btn('Reset Race', 'raceReset()', gray);
+      const lb = raceRanked().slice(0, 10).map((p, i) => `<div class="flex items-center justify-between gap-3 px-3 py-2 rounded-xl ${i === 0 ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-slate-900 border border-slate-800'}"><span class="text-sm font-bold text-slate-200 truncate">${i + 1}. ${escAttr(p.name)}</span><span class="text-xs text-slate-400">${p.correct}/${n}</span><span class="text-sm font-black text-white">${p.score}</span></div>`).join('');
+      return `<div class="grid grid-cols-1 lg:grid-cols-3 gap-5"><div class="lg:col-span-2 space-y-4">${main}<div class="flex flex-wrap gap-2">${actions}</div></div><div class="space-y-2"><div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Leaderboard</div>${lb || '<div class="text-xs text-slate-500">No players yet.</div>'}</div></div>`;
+    }
+
+    // ---- race question editor ----
+    function openRaceEditor() {
+      if (currentRole !== 'host' || raceH.phase === 'question') return;
+      buildRaceEditor(raceQs);
+      document.getElementById('raceEditorModal').classList.remove('hidden');
+    }
+    function closeRaceEditor() { document.getElementById('raceEditorModal').classList.add('hidden'); }
+    function buildRaceEditor(list) {
+      const inp = 'w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500';
+      document.getElementById('raceEditorList').innerHTML = list.map((q, i) => `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start border border-slate-800 rounded-2xl p-3 bg-slate-950/50">
+          <div class="lg:col-span-1 flex lg:flex-col items-center gap-2"><span class="text-amber-400 font-black text-sm">#${i + 1}</span><button onclick="delRaceRow(${i})" class="text-[11px] text-rose-400 hover:text-rose-300">Delete</button></div>
+          <div class="lg:col-span-5"><textarea id="rq_p_${i}" rows="4" class="${inp}">${escAttr(q.prompt)}</textarea><div class="flex items-center gap-2 mt-2"><input id="rq_t_${i}" type="number" min="5" max="120" value="${q.timer || 20}" class="${inp} w-20"><span class="text-xs text-slate-500">sec</span></div></div>
+          <div class="lg:col-span-6 space-y-1.5">${[0, 1, 2, 3].map(j => `<label class="flex items-center gap-2"><input type="radio" name="rq_ok_${i}" value="${j}" ${(q.correct || 0) === j ? 'checked' : ''} class="accent-amber-500"><span class="text-xs text-slate-500 w-3">${'ABCD'[j]}</span><input id="rq_c_${i}_${j}" value="${escAttr((q.choices || [])[j])}" class="${inp}"></label>`).join('')}</div>
+        </div>`).join('');
+    }
+    function readRaceEditor() {
+      const out = [], count = document.querySelectorAll('[id^="rq_p_"]').length;
+      for (let i = 0; i < count; i++) {
+        const vals = [0, 1, 2, 3].map(j => document.getElementById(`rq_c_${i}_${j}`).value.trim());
+        let last = 3; while (last >= 0 && !vals[last]) last--;
+        const choices = vals.slice(0, Math.max(last + 1, 2)).map((t, j) => t || 'Choice ' + 'ABCD'[j]);
+        const sel = document.querySelector(`input[name="rq_ok_${i}"]:checked`);
+        const prompt = document.getElementById(`rq_p_${i}`).value.trim();
+        out.push({ prompt, choices, correct: Math.min(sel ? parseInt(sel.value) : 0, choices.length - 1),
+          timer: Math.max(5, Math.min(120, parseInt(document.getElementById(`rq_t_${i}`).value) || 20)), _ok: !!prompt && vals.filter(Boolean).length >= 2 });
+      }
+      return out;
+    }
+    function addRaceRow() { const l = readRaceEditor(); if (l.length >= 30) return; l.push({ prompt: '', choices: ['', '', '', ''], correct: 0, timer: 20 }); buildRaceEditor(l); }
+    function delRaceRow(i) { const l = readRaceEditor(); l.splice(i, 1); buildRaceEditor(l); }
+    function saveRaceEditor() {
+      const l = readRaceEditor().filter(q => q._ok).slice(0, 30).map(({ prompt, choices, correct, timer }) => ({ prompt, choices, correct, timer }));
+      if (!l.length) return;
+      raceQs = l;
+      try { localStorage.setItem('gogo_race_questions', JSON.stringify(l)); } catch (e) {}
+      if (raceH.phase === 'final') raceReset(); else broadcastState();
+      closeRaceEditor();
+    }
+
+    /* ================= TV MODE ================= */
+    function toggleTV(on) {
+      if (currentRole !== 'host') return;
+      tvOpen = on === undefined ? !tvOpen : on;
+      document.getElementById('tvOverlay').classList.toggle('hidden', !tvOpen);
+      renderTV();
+    }
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && tvOpen) toggleTV(false); });
+
+    function renderTV() {
+      if (!tvOpen) return;
+      const el = document.getElementById('tvBody');
+      if (modeOf() === 'race') {
+        const rk = raceRanked(), n = raceQs.length, ph = raceH.phase;
+        const sub = ph === 'idle' ? `Waiting for players - ${rk.length} joined` : ph === 'final' ? 'Final results' : `Question ${raceH.qi + 1} of ${n}`;
+        const rows = rk.slice(0, 10).map((p, i) => `<div class="flex items-center gap-4 p-3 rounded-2xl ${i === 0 ? 'bg-amber-500/10 border border-amber-500/40' : 'bg-slate-900/70 border border-slate-800'}">
+          <div class="w-14 text-center text-4xl font-black ${i === 0 ? 'text-amber-400' : 'text-slate-500'}">${i + 1}</div>
+          <div class="w-48 md:w-64 text-xl md:text-2xl font-bold text-white truncate">${escAttr(p.name)}</div>
+          <div class="flex-1 h-6 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400" style="width:${n ? Math.round(100 * p.correct / n) : 0}%"></div></div>
+          <div class="w-20 text-right text-lg font-bold text-cyan-300">${p.correct}/${n}</div>
+          <div class="w-28 text-right text-3xl font-black ${i === 0 ? 'text-amber-400' : 'text-slate-200'}">${p.score}</div></div>`).join('');
+        el.innerHTML = `<div class="text-center mb-8"><div class="text-sm font-bold text-cyan-300 uppercase tracking-widest">Tile Race</div><div class="text-5xl font-black text-white mt-2">Leaderboard</div><div class="text-lg text-slate-400 mt-2">${sub}</div></div><div class="space-y-3">${rows || '<div class="text-center text-2xl text-slate-500 py-16">Players will appear here as they join...</div>'}</div>`;
+      } else {
+        const sc = gameState.scores, seats = gameState.seats || {};
+        const lead = sc.group1 === sc.group2 ? 'tie' : sc.group1 > sc.group2 ? 'group1' : 'group2';
+        const card = (g, label, tc) => `<div class="p-8 rounded-3xl text-center border-2 ${lead === g ? 'border-amber-400 bg-amber-500/10' : 'border-slate-800 bg-slate-900/70'}">
+          <div class="text-2xl font-bold ${tc}">${label}${seats[g] ? ' - ' + escAttr(seats[g].name) : ''}</div>
+          <div class="text-7xl font-black text-white mt-4">${sc[g]}</div><div class="text-lg text-slate-400 mt-1">points</div>
+          <div class="text-sm font-bold text-amber-400 mt-3 h-5">${lead === g ? 'LEADING' : ''}</div></div>`;
+        el.innerHTML = `<div class="text-center mb-8"><div class="text-sm font-bold text-amber-400 uppercase tracking-widest">Jeopardy</div><div class="text-5xl font-black text-white mt-2">Scoreboard</div>${lead === 'tie' ? '<div class="text-lg text-slate-400 mt-2">Tied game!</div>' : ''}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-6">${card('group1', 'Group 1', 'text-cyan-400')}${card('group2', 'Group 2', 'text-emerald-400')}</div>`;
+      }
+    }
+
     // Helpers
     function capitalize(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);
@@ -1651,6 +2083,7 @@
       Object.assign(gameState, { activeTile: null, goSignal: false, buzzedTeam: null, pickPhase: false, pickTeam: null, banner: null, timerRunning: false });
       relayConnect();
       cleanExpiredSessions();
+      applyViews();
       updateLoginBadges();
 
       // Show login modal by default
