@@ -442,10 +442,10 @@
           <div class="text-lg font-black text-cyan-400">Duck Race</div>
           <div class="text-xs text-slate-400">Everyone races their own duck - no waiting. Answer questions, first across the finish line wins. Up to 60 players.</div>
         </button>
-        <a href="artillery.html" target="_blank" onclick="setMode('artillery')" class="text-left p-5 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:border-fuchsia-500/60 transition space-y-1 block md:col-span-2">
+        <button onclick="setMode('artillery')" class="text-left p-5 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:border-fuchsia-500/60 transition space-y-1 md:col-span-2">
           <div class="text-lg font-black text-fuchsia-400">Artillery</div>
-          <div class="text-xs text-slate-400">Two teams (up to 30 each) buzz in, answer, and fire at the other team's tanks. Opens the Artillery page.</div>
-        </a>
+          <div class="text-xs text-slate-400">Two teams (up to 30 each) buzz in, answer, and fire at the other team's tanks. Up to 30 players per team.</div>
+        </button>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
         <button onclick="setMode('lobby')" class="text-xs text-rose-300 hover:text-rose-200 font-semibold">Lock all games (back to waiting room)</button>
@@ -501,6 +501,33 @@
     </div>
     <div id="raceHostScene" class="hidden w-full shrink-0" style="height:min(42vh,380px)"></div>
     <div id="raceBody" class="flex-1 overflow-y-auto p-4 md:p-6 max-w-6xl w-full mx-auto"></div>
+  </div>
+
+  <!-- ARTILLERY SCREEN -->
+  <style>
+    #artCv{width:100%;height:auto;border-radius:16px;border:2px solid #1e293b}
+    .acard{background:rgba(15,23,42,.9);border:1px solid #1e293b;border-radius:16px;padding:12px;color:#f1f5f9}
+    .abtn{padding:8px 14px;border-radius:12px;font-weight:700;font-size:13px;background:#334155;color:#f1f5f9}
+    .abtn:hover{background:#475569}.abtn:disabled{opacity:.4}
+    .ago{background:#f59e0b;color:#0f172a}.ago:hover{background:#fbbf24}
+  </style>
+  <div id="artView" class="fixed inset-0 z-[45] bg-slate-950 flex flex-col hidden">
+    <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 font-black flex items-center justify-center text-sm">AR</div>
+        <div><div class="text-sm font-black text-white">Artillery</div><div id="artSub" class="text-xs text-slate-400"></div></div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="sync-pill text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 font-semibold">Sync: connecting...</div>
+        <button onclick="openRaceEditor()" class="race-host-only hidden px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs">Edit Questions</button>
+        <button onclick="openModeModal()" class="race-host-only hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs border border-slate-700">Games</button>
+        <button onclick="logoutRole()" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 rounded-lg text-xs border border-slate-700">Leave</button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-3 md:p-5 max-w-5xl w-full mx-auto space-y-3">
+      <canvas id="artCv" width="1000" height="500"></canvas>
+      <div id="artPanel" class="space-y-3"></div>
+    </div>
   </div>
 
   <!-- TV MODE -->
@@ -1646,6 +1673,7 @@
         if (seenMsgs.size > 300) seenMsgs.delete(seenMsgs.values().next().value);
       }
       const isHost = currentRole === 'host';
+      if (m.type && m.type.indexOf('ART_') === 0) { if (window.artMsg) artMsg(m, isHost); return; }
       if (m.type === 'SESSION_UPDATE') updateLoginBadges();
       else if (m.type === 'STATE' && !isHost) applyState(m.state);
       else if (m.type === 'BOARD' && !isHost) {
@@ -1709,6 +1737,7 @@
         if (modeOf() === 'jeopardy') broadcastBoard(false);
         broadcastState();
         resendRaceDeck();
+        if (modeOf() === 'artillery' && window.artPush) artPush();
       }, 1200);
     }
 
@@ -1726,6 +1755,7 @@
       }
       gameState.mode = mode;
       modeOpen = false;
+      if (mode === 'artillery' && window.artInit) artInit();
       syncStateToLocalStorage();
       if (mode === 'jeopardy') { broadcastBoard(false); renderBoard(); updateMainBoardStatus(); }
       broadcastState();
@@ -1748,13 +1778,14 @@
     function applyViews() {
       const show = (id, on) => document.getElementById(id).classList.toggle('hidden', !on);
       const r = currentRole, host = r === 'host', m = modeOf(), isPlayer = !!r && !host;
-      if (isPlayer && m === 'artillery') { location.href = 'artillery.html'; return; }
       if (isPlayer) syncSeatRole();
       show('modeModal', host && (m === 'lobby' || modeOpen));
       show('modeCloseBtn', m !== 'lobby');
       show('lobbyOverlay', isPlayer && m === 'lobby');
       show('seatOverlay', isPlayer && m === 'jeopardy' && currentRole === 'player');
       show('raceView', !!r && m === 'race');
+      show('artView', !!r && m === 'artillery');
+      if (r && m === 'artillery' && window.artRender) artRender();
       document.querySelectorAll('.race-host-only').forEach(b => b.classList.toggle('hidden', !host));
       if (isPlayer && m === 'jeopardy' && currentRole === 'player') renderSeats();
       if (isPlayer && m === 'race') racePlayerSync();
@@ -2330,6 +2361,301 @@ function renderTV() {
       renderBoard();
       updateMainBoardStatus();
     };
+  </script>
+  <script>
+/* ================= ARTILLERY (lives inside the same site) ================= */
+(function () {
+  const W = 1000, H = 500, G = 300, VMAX = 640, CR = 32, HP0 = 5, CAP = 30;
+  const FI = { ki: 'Ki', oscar: 'Oscar', aina: 'Aina', tene: 'Tene' }, IDS = Object.keys(FI);
+  const COL = { A: '#22c55e', B: '#d946ef' };
+  const IMG = {}; IDS.forEach(i => { IMG[i] = new Image(); IMG[i].src = 'assets/' + i + '.jpg'; });
+  const $ = id => document.getElementById(id);
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const isHost = () => currentRole === 'host';
+
+  let S = null, roster = {}, Ht = null, anim = null, pend = null, lastShot = 0;
+  let ang = 45, pow = 60, corr = 0, usedQ = [], tAns = null, acked = false, full = false;
+  let myT = sessionStorage.getItem('gga_t') || null;
+
+  const fresh = () => ({
+    seed: Math.floor(Math.random() * 1e9), craters: [],
+    hp: { ki: HP0, oscar: HP0, aina: HP0, tene: HP0 },
+    team: { ki: 'A', oscar: 'A', aina: 'B', tene: 'B' },
+    buzzer: { A: null, B: null }, cnt: { A: 0, B: 0 },
+    phase: 'setup', q: null, locked: { A: 0, B: 0 }, buzzed: null, shooter: null,
+    wind: 0, shot: null, winner: null, msg: 'Host: pick 2 fighters for each team, then start the battle.', rev: 0
+  });
+  const count = t => Object.values(roster).filter(p => p[1] === t).length;
+
+  /* ---------- terrain & physics ---------- */
+  function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function carve(h, c) {
+    const cx = c[0], cy = c[1];
+    for (let x = Math.max(0, Math.floor(cx - CR)); x <= Math.min(W, Math.ceil(cx + CR)); x++) {
+      const d = Math.sqrt(Math.max(0, CR * CR - (x - cx) ** 2));
+      if (h[x] > cy - d) h[x] = Math.max(25, cy - d);
+    }
+  }
+  function terrain(seed, cr) {
+    const r = rng(seed), h = new Float32Array(W + 1), base = 170 + r() * 70;
+    const waves = [0, 1, 2].map(i => ({ a: (90 - i * 30) * (.5 + r()), f: (1.1 + r() * 1.8 + i) * 2 * Math.PI / W, p: r() * 6.28 }));
+    for (let x = 0; x <= W; x++) {
+      let v = base; waves.forEach(w => v += w.a * Math.sin(w.f * x + w.p));
+      const e = Math.min(1, Math.min(x, W - x) / 140), sm = e * e * (3 - 2 * e);
+      h[x] = clamp(base + (v - base) * sm, 60, 360);
+    }
+    cr.forEach(c => carve(h, c));
+    return h;
+  }
+  function fx(i) { const m = IDS.filter(k => S.team[k] === S.team[i]); return S.team[i] === 'A' ? [190, 340][m.indexOf(i)] : [810, 660][m.indexOf(i)]; }
+  const fy = i => Ht[Math.round(fx(i))] + 26;
+  // Physics: every 1/60 s -> wind pushes sideways, gravity pulls down, then move.
+  function trace(s) {
+    const d = s.t === 'A' ? 1 : -1, a = s.a * Math.PI / 180, tx = d > 0 ? 40 : 960, v = s.p / 100 * VMAX;
+    let x = tx + d * Math.cos(a) * 34, y = Ht[tx] + 40 + Math.sin(a) * 34, vx = d * v * Math.cos(a), vy = v * Math.sin(a);
+    const pts = [[x, y]], dt = 1 / 60, foes = IDS.filter(i => S.team[i] !== s.t && S.hp[i] > 0);
+    for (let k = 0; k < 1500; k++) {
+      vx += s.w * dt; vy -= G * dt; x += vx * dt; y += vy * dt; pts.push([x, y]);
+      if (x < -80 || x > W + 80 || y < -100) return { pts, off: 1 };
+      if ((x >= 0 && x <= W && y <= Ht[clamp(Math.round(x), 0, W)]) || foes.some(i => Math.hypot(x - fx(i), y - fy(i)) < 28)) break;
+    }
+    const ix = pts[pts.length - 1][0], iy = pts[pts.length - 1][1];
+    let hit = null, best = 52;
+    foes.forEach(i => { const q = Math.hypot(ix - fx(i), iy - fy(i)); if (q < best) { best = q; hit = i; } });
+    return { pts, ix, iy, hit };
+  }
+
+  /* ---------- host logic ---------- */
+  function push() {
+    S.cnt = { A: count('A'), B: count('B') };
+    S.rev = Math.max(Date.now(), S.rev + 1);
+    try { localStorage.setItem('gogo_art', JSON.stringify({ S, roster })); } catch (e) {}
+    sendMsg({ type: 'ART_S', s: S });
+    showState(S);
+  }
+  const canBuzzH = id => { const p = roster[id]; return p && (!S.buzzer[p[1]] || S.buzzer[p[1]] === id); };
+  function ensure(m) {
+    if (!roster[m.pid] && (m.t === 'A' || m.t === 'B') && count(m.t) < CAP) roster[m.pid] = [String(m.n || 'Player').slice(0, 12), m.t];
+    return roster[m.pid];
+  }
+  function ask() {
+    const qs = raceQs.filter(q => q && q.choices && q.choices.length > 1);
+    if (!qs.length) { S.msg = 'No questions yet - press Edit Questions.'; return push(); }
+    let n = qs.map((_, i) => i).filter(i => !usedQ.includes(i));
+    if (!n.length) { usedQ = []; n = qs.map((_, i) => i); }
+    const i = n[Math.floor(Math.random() * n.length)]; usedQ.push(i);
+    const q = qs[i]; corr = q.correct || 0;
+    Object.assign(S, { q: { prompt: q.prompt, choices: q.choices }, locked: { A: 0, B: 0 }, buzzed: null, phase: 'ask', shooter: null, msg: 'Get ready to buzz...' });
+    push();
+    setTimeout(() => { if (S.phase === 'ask') { S.phase = 'open'; S.msg = 'BUZZ NOW!'; push(); } }, 1500);
+  }
+  function hBuzz(id) {
+    const p = roster[id];
+    if (S.phase !== 'open' || !p || S.locked[p[1]] || !canBuzzH(id)) return;
+    S.buzzed = p[1]; S.phase = 'answer';
+    S.msg = p[0] + ' (Team ' + p[1] + ') buzzed first! Answer within 20 seconds.';
+    clearTimeout(tAns); tAns = setTimeout(() => { if (S.phase === 'answer') grade(false); }, 20000);
+    push();
+  }
+  function grade(ok) {
+    clearTimeout(tAns); const t = S.buzzed;
+    if (ok) {
+      const m = Object.entries(roster).filter(([k, p]) => p[1] === t);
+      const pk = m.length ? m[Math.floor(Math.random() * m.length)] : null;   // random shooter from the winning team
+      S.shooter = { t, pid: pk ? pk[0] : null, name: pk ? pk[1][0] : 'Host' };
+      S.wind = Math.round((Math.random() * 2 - 1) * 300) / 10;               // new wind every shot (-30..30)
+      S.phase = 'aim'; S.msg = 'Correct! ' + S.shooter.name + ' (Team ' + t + ') was randomly picked to shoot!';
+    } else {
+      S.locked[t] = 1; S.buzzed = null;
+      if (S.locked.A && S.locked.B) { S.phase = 'idle'; S.msg = 'Both teams missed. No shot this round.'; }
+      else { S.phase = 'open'; S.msg = 'Wrong! Team ' + (t === 'A' ? 'B' : 'A') + ' can steal - BUZZ!'; }
+    }
+    push();
+  }
+  function hFire(a, p) {
+    if (S.phase !== 'aim') return;
+    const sh = { id: Date.now(), t: S.shooter.t, a: clamp(a, 5, 85), p: clamp(p, 10, 100), w: S.wind };
+    S.shot = sh; S.phase = 'fly'; S.msg = 'Incoming...'; push();
+    const r = trace(sh);
+    setTimeout(() => {
+      if (!r.off) { S.craters.push([Math.round(r.ix), Math.round(r.iy)]); if (r.hit) S.hp[r.hit]--; }
+      S.msg = r.hit ? 'Direct hit on ' + FI[r.hit] + '! (' + S.hp[r.hit] + ' HP left)' : 'Missed!';
+      const dead = t => IDS.filter(i => S.team[i] === t).every(i => S.hp[i] <= 0);
+      if (dead('A') || dead('B')) { S.winner = dead('B') ? 'A' : 'B'; S.phase = 'over'; S.msg = 'Team ' + S.winner + ' wins!'; }
+      else S.phase = 'idle';
+      S.shot = null; push();
+    }, r.pts.length * 8 + 1000);
+  }
+  function newGame() { const b = S.buzzer, t = S.team; S = Object.assign(fresh(), { buzzer: b, team: t }); usedQ = []; push(); }
+
+  /* ---------- messages ---------- */
+  window.artInit = function () {   // called when the host opens Artillery
+    if (!isHost()) return;
+    if (!S) { try { const o = JSON.parse(localStorage.getItem('gogo_art')); if (o && o.S) { S = o.S; roster = o.roster || {}; S.phase = S.phase === 'fly' ? 'idle' : S.phase; S.shot = null; } } catch (e) {} }
+    if (!S) { S = fresh(); roster = {}; }
+    push();
+  };
+  window.artPush = function () { if (isHost() && S) push(); };
+  window.artMsg = function (m, host) {
+    if (!host) {
+      if (m.type === 'ART_S') showState(m.s);
+      else if (m.type === 'ART_ACK' && m.pid === myPid) { acked = !!m.ok; full = !m.ok; if (!m.ok) { myT = null; sessionStorage.removeItem('gga_t'); } render(); }
+      return;
+    }
+    if (!S) return;
+    if (m.type === 'ART_JOIN') {
+      const cur = roster[m.pid], c = Object.entries(roster).filter(([k, p]) => p[1] === m.t && k !== m.pid).length;
+      const ok = (m.t === 'A' || m.t === 'B') && c < CAP;
+      if (ok) roster[m.pid] = [String(m.n || 'Player').slice(0, 12), m.t];
+      sendMsg({ type: 'ART_ACK', pid: m.pid, ok });
+      if (ok) push();
+    }
+    else if (m.type === 'ART_BUZZ') { if (ensure(m)) hBuzz(m.pid); }
+    else if (m.type === 'ART_ANS') { const p = ensure(m); if (S.phase === 'answer' && p && p[1] === S.buzzed && canBuzzH(m.pid)) grade(m.i === corr); }
+    else if (m.type === 'ART_FIRE') { if (S.shooter && S.shooter.pid === m.pid) hFire(m.a, m.p); }
+  };
+
+  /* ---------- show state & animate ---------- */
+  function showState(s) {
+    if (!isHost() && S && s.rev < S.rev) return;
+    if (anim && !isHost()) { pend = s; return; }
+    S = s; Ht = terrain(S.seed, S.craters);
+    if (S.shot && S.shot.id !== lastShot) { lastShot = S.shot.id; anim = { r: trace(S.shot), k: 0, t0: 0 }; }
+    render();
+  }
+  function endAnim() {
+    if (!anim.r.off) carve(Ht, [anim.r.ix, anim.r.iy]);
+    anim = null;
+    if (pend) { const p = pend; pend = null; showState(p); }
+  }
+
+  /* ---------- drawing ---------- */
+  const cv = $('artCv'), c = cv.getContext('2d');
+  function frame() { try { draw(); } catch (e) {} requestAnimationFrame(frame); }
+  function draw() {
+    if (!S || !Ht || $('artView').classList.contains('hidden')) return;
+    const Y = y => H - y;
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#38bdf8'); g.addColorStop(1, '#e0f2fe');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.beginPath(); c.moveTo(0, H); for (let x = 0; x <= W; x += 2) c.lineTo(x, Y(Ht[x])); c.lineTo(W, H); c.closePath();
+    c.fillStyle = '#d1d5db'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = '#111'; c.stroke();
+    const aimT = S.phase === 'aim' && S.shooter && (isHost() || S.shooter.pid === myPid) ? S.shooter.t : null;
+    ['A', 'B'].forEach(t => {
+      const d = t === 'A' ? 1 : -1, tx = t === 'A' ? 40 : 960, ty = Ht[tx], a = (aimT === t ? ang : 45) * Math.PI / 180;
+      c.fillStyle = '#374151'; c.fillRect(tx - 18, Y(ty + 40), 36, 40);
+      c.fillStyle = COL[t]; c.fillRect(tx - 22, Y(ty + 46), 44, 8);
+      c.strokeStyle = COL[t]; c.lineWidth = 9; c.beginPath(); c.moveTo(tx, Y(ty + 40)); c.lineTo(tx + d * Math.cos(a) * 34, Y(ty + 40 + Math.sin(a) * 34)); c.stroke();
+      c.fillStyle = '#111'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillText('TOWER ' + t, tx, Y(ty + 56));
+    });
+    IDS.forEach(i => {
+      const x = fx(i), y = Y(fy(i)), dead = S.hp[i] <= 0;
+      c.save(); c.globalAlpha = dead ? .35 : 1;
+      c.beginPath(); c.arc(x, y, 26, 0, 7); c.save(); c.clip(); if (IMG[i].complete) c.drawImage(IMG[i], x - 26, y - 26, 52, 52); c.restore();
+      c.lineWidth = 4; c.strokeStyle = COL[S.team[i]]; c.beginPath(); c.arc(x, y, 26, 0, 7); c.stroke();
+      for (let k = 0; k < HP0; k++) { c.fillStyle = k < S.hp[i] ? '#ef4444' : '#475569'; c.fillRect(x - 27 + k * 11, y - 42, 9, 7); }
+      c.fillStyle = '#111'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText(FI[i] + (dead ? ' (out)' : ''), x, y - 47);
+      c.restore();
+    });
+    if (S.phase === 'aim' || S.phase === 'fly') {
+      const wv = S.wind;
+      c.fillStyle = 'rgba(15,23,42,.8)'; c.fillRect(W / 2 - 90, 8, 180, 30);
+      c.fillStyle = '#fff'; c.font = 'bold 15px sans-serif'; c.textAlign = 'center';
+      c.fillText('Wind ' + (wv < 0 ? '<< ' : '') + Math.abs(wv).toFixed(1) + (wv > 0 ? ' >>' : ''), W / 2, 29);
+    }
+    if (anim) {
+      const r = anim.r, n = Math.min(Math.floor(anim.k), r.pts.length - 1);
+      c.strokeStyle = '#111'; c.lineWidth = 1; c.beginPath();
+      r.pts.slice(0, n + 1).forEach((p, j) => j ? c.lineTo(p[0], Y(p[1])) : c.moveTo(p[0], Y(p[1]))); c.stroke();
+      const p = r.pts[n]; c.fillStyle = '#374151'; c.beginPath(); c.arc(p[0], Y(p[1]), 6, 0, 7); c.fill(); c.stroke();
+      if (n < r.pts.length - 1) anim.k += 2;
+      else {
+        if (!anim.t0) anim.t0 = performance.now();
+        const e = performance.now() - anim.t0;
+        if (!r.off) { c.fillStyle = 'rgba(251,146,60,' + Math.max(0, 1 - e / 600) + ')'; c.beginPath(); c.arc(r.ix, Y(r.iy), CR * (.4 + e / 500), 0, 7); c.fill(); }
+        if (e > 700) endAnim();
+      }
+    }
+  }
+
+  /* ---------- buttons & screens ---------- */
+  function sendJoin() { sendMsg({ type: 'ART_JOIN', pid: myPid, n: myName, t: myT }); }
+  const A = window.art = {
+    join(t) { myT = t; full = false; acked = false; sessionStorage.setItem('gga_t', t); sendJoin(); render(); },
+    buzz() { if (amBuzzer()) sendMsg({ type: 'ART_BUZZ', pid: myPid, n: myName, t: myT }); },
+    pick(i) { if (isHost()) grade(i === corr); else sendMsg({ type: 'ART_ANS', pid: myPid, n: myName, t: myT, i }); },
+    fire() { if (isHost()) hFire(ang, pow); else sendMsg({ type: 'ART_FIRE', pid: myPid, a: ang, p: pow }); },
+    team(i, t) { S.team[i] = t; push(); },
+    buzzerOf(t, id) { S.buzzer[t] = S.buzzer[t] === id ? null : id; push(); },
+    terrain() { S.seed = Math.floor(Math.random() * 1e9); S.craters = []; push(); },
+    start() { S.phase = 'idle'; S.msg = 'Battle started! Ask the first question.'; push(); },
+    ask, grade, newGame,
+    skip() { S.phase = 'idle'; S.msg = 'Question skipped.'; push(); },
+    ang(v) { ang = +v; $('artAv').textContent = ang; },
+    pow(v) { pow = +v; $('artPv').textContent = pow; }
+  };
+  function amBuzzer() { return !isHost() && myT && S && S.phase === 'open' && !S.locked[myT] && (!S.buzzer[myT] || S.buzzer[myT] === myPid); }
+
+  function render() {
+    if (!S) { $('artPanel').innerHTML = '<div class="card">Waiting for the host...</div>'; return; }
+    const host = isHost(), iAmShooter = S.phase === 'aim' && S.shooter && S.shooter.pid === myPid;
+    let h = '<div class="acard text-center font-bold text-amber-300">' + esc(S.msg) + '</div>';
+    if (S.q && ['ask', 'open', 'answer'].includes(S.phase)) {
+      const mine = S.phase === 'answer' && (host || (S.buzzed === myT && (!S.buzzer[myT] || S.buzzer[myT] === myPid)));
+      h += '<div class="acard space-y-2"><div class="font-bold">' + esc(S.q.prompt) + '</div><div class="grid sm:grid-cols-2 gap-2">' +
+        S.q.choices.map((ch, i) => '<button class="abtn" ' + (mine ? '' : 'disabled') + ' onclick="art.pick(' + i + ')">' + 'ABCD'[i] + '. ' + esc(ch) + (host && i === corr ? ' (correct)' : '') + '</button>').join('') + '</div></div>';
+    }
+    if (amBuzzer()) h += '<button class="abtn ago w-full text-2xl py-6" onclick="art.buzz()">BUZZ! (Space)</button>';
+    if (S.phase === 'aim' && (host || iAmShooter)) {
+      h += '<div class="acard space-y-2"><b>' + (iAmShooter ? 'You are the shooter!' : 'Host: fire for ' + esc(S.shooter.name)) + ' - wind ' + S.wind.toFixed(1) + '</b>' +
+        '<label class="block text-sm">Angle: <span id="artAv">' + ang + '</span> deg<input type="range" min="5" max="85" value="' + ang + '" class="w-full" oninput="art.ang(this.value)"></label>' +
+        '<label class="block text-sm">Power: <span id="artPv">' + pow + '</span><input type="range" min="10" max="100" value="' + pow + '" class="w-full" oninput="art.pow(this.value)"></label>' +
+        '<button class="abtn ago w-full" onclick="art.fire()">FIRE! (Enter)</button></div>';
+    }
+    if (host) h += hostUI();
+    else if (!myT) {
+      h += '<div class="acard space-y-2"><b>' + (full ? 'That team is full (30 max) - pick the other team.' : 'Pick your team, ' + esc(myName || 'player') + '!') + '</b><div class="flex gap-2">' +
+        '<button class="abtn ago flex-1" onclick="art.join(\'A\')">Join Team A (green)</button><button class="abtn flex-1" style="background:#d946ef" onclick="art.join(\'B\')">Join Team B (purple)</button></div></div>';
+    } else {
+      h += '<div class="text-xs text-center text-slate-400">You are ' + esc(myName) + ' on Team ' + myT + (S.buzzer[myT] === myPid ? ' - you are the BUZZER' : '') + (acked ? '' : ' (joining...)') + '</div>';
+    }
+    $('artPanel').innerHTML = h;
+    $('artSub').textContent = 'Team A ' + S.cnt.A + '/30 players  |  Team B ' + S.cnt.B + '/30 players';
+  }
+  window.artRender = render;
+
+  function hostUI() {
+    const ok = ['A', 'B'].every(t => IDS.filter(i => S.team[i] === t).length === 2);
+    let h = '<div class="acard space-y-2"><b>Host controls</b>';
+    if (S.phase === 'setup') {
+      h += IDS.map(i => '<div class="flex items-center gap-2 text-sm"><img src="assets/' + i + '.jpg" class="w-8 h-8 rounded-full"><span class="w-14">' + FI[i] + '</span>' +
+        ['A', 'B'].map(t => '<button class="abtn" style="' + (S.team[i] === t ? 'background:' + COL[t] + ';color:#000' : '') + '" onclick="art.team(\'' + i + '\',\'' + t + '\')">Team ' + t + '</button>').join('') + '</div>').join('') +
+        '<div class="flex gap-2"><button class="abtn" onclick="art.terrain()">New terrain</button><button class="abtn ago" ' + (ok ? '' : 'disabled') + ' onclick="art.start()">Start battle</button></div>' +
+        (ok ? '' : '<p class="text-xs text-rose-300">Each team needs exactly 2 fighters.</p>');
+    }
+    else if (S.phase === 'idle') h += '<button class="abtn ago" onclick="art.ask()">Ask next question</button>';
+    else if (S.phase === 'over') h += '<button class="abtn ago" onclick="art.newGame()">New game (new terrain)</button>';
+    else if (['ask', 'open'].includes(S.phase)) h += '<button class="abtn" onclick="art.skip()">Skip question</button>';
+    if (S.phase === 'answer') h += '<div class="flex gap-2"><button class="abtn ago" onclick="art.grade(true)">Mark correct</button><button class="abtn" onclick="art.grade(false)">Mark wrong</button></div>';
+    h += '</div><div class="grid sm:grid-cols-2 gap-3">' + ['A', 'B'].map(t => {
+      const m = Object.entries(roster).filter(([k, p]) => p[1] === t);
+      return '<div class="acard"><b style="color:' + COL[t] + '">Team ' + t + ' (' + m.length + '/30)</b><div class="flex flex-wrap gap-1 mt-2">' +
+        (m.map(([k, p]) => '<button class="abtn" style="padding:3px 8px;' + (S.buzzer[t] === k ? 'background:#f59e0b;color:#000' : '') + '" onclick="art.buzzerOf(\'' + t + '\',\'' + k + '\')">' + (S.buzzer[t] === k ? '[buzzer] ' : '') + esc(p[0]) + '</button>').join('') || '<span class="text-xs text-slate-400">No players yet</span>') +
+        '</div><p class="text-xs text-slate-400 mt-1">Tap a name to make them the buzzer.</p></div>';
+    }).join('') + '</div>';
+    return h;
+  }
+
+  addEventListener('keydown', e => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) || !S) return;
+    if (typeof modeOf !== 'function' || modeOf() !== 'artillery' || !currentRole) return;
+    if (e.code === 'Space' && !isHost()) { e.preventDefault(); A.buzz(); }
+    else if (e.key === 'Enter' && S.phase === 'aim' && (isHost() || (S.shooter && S.shooter.pid === myPid))) A.fire();
+  });
+  // players keep retrying to join until the host confirms them
+  setInterval(() => { if (!isHost() && currentRole && modeOf() === 'artillery' && myT && !acked) sendJoin(); }, 4000);
+  frame();
+})();
   </script>
   <script src="class-footer.js"></script>
 </body>
