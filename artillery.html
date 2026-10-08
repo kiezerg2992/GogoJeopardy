@@ -141,7 +141,7 @@ function hostUI(){const ok=['A','B'].every(t=>IDS.filter(i=>S.team[i]===t).lengt
   return '<div class="card"><b style="color:'+COL[t]+'">Team '+t+' ('+m.length+'/30)</b><div class="flex flex-wrap gap-1 mt-2">'+(m.map(([k,p])=>'<button class="btn" style="padding:3px 8px;'+(S.buzzer[t]===k?'background:#f59e0b;color:#000':'')+'" onclick="setB(\''+t+'\',\''+k+'\')">'+(S.buzzer[t]===k?'🔔 ':'')+esc(p[0])+'</button>').join('')||'<span class="text-xs text-slate-400">No players yet</span>')+'</div><p class="text-xs text-slate-400 mt-1">Tap a name to make them the buzzer.</p></div>'}).join('')+'</div>';return h}
 addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)||!S)return;
  if(e.code==='Space'){e.preventDefault();buzz()}else if(e.key==='Enter'&&S.phase==='aim'&&(role==='host'||S.shooter.pid===pid))fire()});
-$('nm').value=sessionStorage.gga_n||'';connect();frame();
+$('nm').value=sessionStorage.gga_n||sessionStorage.gogo_name||'';connect();frame();
 </script>
 <script src="class-footer.js"></script>
 </body></html>
