@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GoGo Artillery</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>body{font-family:system-ui,sans-serif;color:#f1f5f9}canvas{width:100%;height:auto;border-radius:16px;border:2px solid #1e293b}
+.card{background:rgba(15,23,42,.9);border:1px solid #1e293b;border-radius:16px;padding:12px}
+.btn{padding:8px 14px;border-radius:12px;font-weight:700;font-size:13px;background:#334155}.btn:hover{background:#475569}.btn:disabled{opacity:.4}
+.go{background:#f59e0b;color:#0f172a}.go:hover{background:#fbbf24}</style></head>
+<body class="min-h-screen"><div id="app" class="min-h-screen flex flex-col">
+<main class="flex-1 max-w-5xl w-full mx-auto p-3 space-y-3">
+<div class="flex items-center justify-between"><h1 class="text-xl font-black text-amber-400">🎯 GoGo Artillery</h1><span id="sync" class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">Sync: connecting</span></div>
+<div id="login" class="grid sm:grid-cols-2 gap-3">
+ <div class="card space-y-2"><b>Player</b><input id="nm" maxlength="12" placeholder="Your name" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm">
+  <div class="flex gap-2"><button class="btn go flex-1" onclick="joinP('A')">Join Team A 🟢</button><button class="btn flex-1" style="background:#d946ef" onclick="joinP('B')">Join Team B 🟣</button></div></div>
+ <div class="card space-y-2"><b>Host</b><input id="pw" type="password" placeholder="Host password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm" onkeydown="if(event.key==='Enter')joinH()">
+  <button class="btn go w-full" onclick="joinH()">Enter as Host</button><p id="pwe" class="hidden text-xs text-rose-400">Wrong password.</p></div>
+</div>
+<div id="game" class="hidden space-y-3"><canvas id="cv" width="1000" height="500"></canvas><div id="panel" class="space-y-3"></div></div>
+</main></div>
+<script src="artillery-questions.js"></script>
+<script>
+const W=1000,H=500,G=300,VMAX=640,CR=32,HP0=5,TOPIC='https://ntfy.sh/gogo-orientation-artillery-ki-7f3a9c21',PASS=['yestobangs','gogoki'];
+const FI={ki:'Ki',oscar:'Oscar',aina:'Aina',tene:'Tene'},IDS=Object.keys(FI),COL={A:'#22c55e',B:'#d946ef'};
+const IMG={};IDS.forEach(i=>{IMG[i]=new Image();IMG[i].src='assets/'+i+'.jpg'});
+const $=id=>document.getElementById(id),esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pid=sessionStorage.gga_pid||(sessionStorage.gga_pid='p'+Math.random().toString(36).slice(2,8)),tab=pid+Math.random().toString(36).slice(2,5);
+let role=null,me={t:null,n:''},S=null,Ht=null,anim=null,pend=null,ang=45,pow=60,corr=0,usedQ=[],tAns=null,seen=new Set(),lastShot=0;
+const fresh=()=>({seed:Math.floor(Math.random()*1e9),craters:[],hp:{ki:HP0,oscar:HP0,aina:HP0,tene:HP0},team:{ki:'A',oscar:'A',aina:'B',tene:'B'},players:{},buzzer:{A:null,B:null},phase:'setup',q:null,locked:{A:0,B:0},buzzed:null,shooter:null,wind:0,shot:null,winner:null,msg:'Host: pick fighters for each team, then start.',rev:0});
+/* ---------- terrain & physics ---------- */
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function carve(h,c){const[cx,cy]=c,r=CR;for(let x=Math.max(0,Math.floor(cx-r));x<=Math.min(W,Math.ceil(cx+r));x++){const d=Math.sqrt(Math.max(0,r*r-(x-cx)**2));if(h[x]>cy-d)h[x]=Math.max(25,cy-d)}}
+function terrain(seed,cr){const r=rng(seed),h=new Float32Array(W+1),b=170+r()*70;
+ const ws=[0,1,2].map(i=>({a:(90-i*30)*(.5+r()),f:(1.1+r()*1.8+i)*2*Math.PI/W,p:r()*6.28}));
+ for(let x=0;x<=W;x++){let v=b;ws.forEach(w=>v+=w.a*Math.sin(w.f*x+w.p));const e=Math.min(1,Math.min(x,W-x)/140),s=e*e*(3-2*e);h[x]=clamp(b+(v-b)*s,60,360)}
+ cr.forEach(c=>carve(h,c));return h}
+function fx(i){const m=IDS.filter(k=>S.team[k]===S.team[i]);return S.team[i]==='A'?[190,340][m.indexOf(i)]:[810,660][m.indexOf(i)]}
+const fy=i=>Ht[Math.round(fx(i))]+26;
+function trace(s){const d=s.t==='A'?1:-1,a=s.a*Math.PI/180,tx=d>0?40:960,v=s.p/100*VMAX;
+ let x=tx+d*Math.cos(a)*34,y=Ht[tx]+40+Math.sin(a)*34,vx=d*v*Math.cos(a),vy=v*Math.sin(a);const pts=[[x,y]],dt=1/60,foes=IDS.filter(i=>S.team[i]!==s.t&&S.hp[i]>0);
+ for(let k=0;k<1500;k++){vx+=s.w*dt;vy-=G*dt;x+=vx*dt;y+=vy*dt;pts.push([x,y]);
+  if(x<-80||x>W+80||y<-100)return{pts,off:1};
+  if((x>=0&&x<=W&&y<=Ht[clamp(Math.round(x),0,W)])||foes.some(i=>Math.hypot(x-fx(i),y-fy(i))<28))break}
+ const[ix,iy]=pts[pts.length-1];let hit=null,best=52;foes.forEach(i=>{const q=Math.hypot(ix-fx(i),iy-fy(i));if(q<best){best=q;hit=i}});return{pts,ix,iy,hit}}
+/* ---------- sync ---------- */
+const ch=new BroadcastChannel('gogo_artillery');
+function setSync(ok,t){const e=$('sync');e.textContent='Sync: '+t;e.className='text-xs px-2 py-1 rounded '+(ok?'bg-emerald-950 text-emerald-300':'bg-rose-950 text-rose-300')}
+function send(m){m.sender=tab;m.mid=tab+Date.now()+Math.random();try{ch.postMessage(m)}catch(e){}
+ fetch(TOPIC,{method:'POST',body:JSON.stringify(m)}).then(r=>setSync(r.ok,r.ok?'live':'error '+r.status)).catch(()=>setSync(0,'offline'))}
+function connect(){try{const es=new EventSource(TOPIC+'/sse');es.onopen=()=>{setSync(1,'live');if(role==='player')send({type:'HELLO'})};es.onerror=()=>setSync(0,'reconnecting...');
+ es.onmessage=e=>{try{const v=JSON.parse(e.data);if(v.event==='message')onMsg(JSON.parse(v.message))}catch(x){}}}catch(e){setSync(0,'offline')}}
+ch.onmessage=e=>onMsg(e.data);
+function push(){S.rev=Math.max(Date.now(),S.rev+1);try{localStorage.gga_state=JSON.stringify(S)}catch(e){}send({type:'S',s:S});showState(S)}
+function onMsg(m){if(!m||m.sender===tab||seen.has(m.mid))return;seen.add(m.mid);
+ if(m.type==='S'&&role==='player')showState(m.s);
+ else if(role==='host'){
+  if(m.type==='HELLO')push();
+  else if(m.type==='JOIN'){const c=Object.values(S.players).filter(p=>p[1]===m.t).length;if(S.players[m.pid]||c<30){S.players[m.pid]=[String(m.n).slice(0,12),m.t];push()}}
+  else if(m.type==='BUZZ')hBuzz(m.pid);
+  else if(m.type==='ANS'){const p=S.players[m.pid];if(S.phase==='answer'&&p&&p[1]===S.buzzed&&canBuzz(m.pid))grade(m.i===corr)}
+  else if(m.type==='FIRE'&&S.shooter&&S.shooter.pid===m.pid)hFire(m.a,m.p)}}
+/* ---------- host logic ---------- */
+const canBuzz=id=>{const p=S.players[id];return p&&(!S.buzzer[p[1]]||S.buzzer[p[1]]===id)};
+function ask(){let n=ART_QS.map((_,i)=>i).filter(i=>!usedQ.includes(i));if(!n.length){usedQ=[];n=ART_QS.map((_,i)=>i)}
+ const i=n[Math.floor(Math.random()*n.length)];usedQ.push(i);const q=ART_QS[i];corr=q.correct;
+ Object.assign(S,{q:{prompt:q.prompt,choices:q.choices},locked:{A:0,B:0},buzzed:null,phase:'ask',shooter:null,msg:'Get ready to buzz...'});push();
+ setTimeout(()=>{if(S.phase==='ask'){S.phase='open';S.msg='BUZZ NOW!';push()}},1500)}
+function hBuzz(id){const p=S.players[id];if(S.phase!=='open'||!p||S.locked[p[1]]||!canBuzz(id))return;
+ S.buzzed=p[1];S.phase='answer';S.msg=p[0]+' (Team '+p[1]+') buzzed first! Answer within 20s.';clearTimeout(tAns);tAns=setTimeout(()=>{if(S.phase==='answer')grade(false)},20000);push()}
+function grade(ok){clearTimeout(tAns);const t=S.buzzed;
+ if(ok){const m=Object.entries(S.players).filter(([k,p])=>p[1]===t),pk=m.length?m[Math.floor(Math.random()*m.length)]:null;
+  S.shooter={t,pid:pk?pk[0]:null,name:pk?pk[1][0]:'Host'};S.wind=Math.round((Math.random()*2-1)*300)/10;S.phase='aim';S.msg='✅ Correct! '+S.shooter.name+' (Team '+t+') was randomly picked to shoot!'}
+ else{S.locked[t]=1;S.buzzed=null;if(S.locked.A&&S.locked.B){S.phase='idle';S.msg='❌ Both teams missed. No shot this round.'}else{S.phase='open';S.msg='❌ Wrong! Team '+(t==='A'?'B':'A')+' can steal - BUZZ!'}}push()}
+function hFire(a,p){if(S.phase!=='aim')return;const sh={id:Date.now(),t:S.shooter.t,a:clamp(a,5,85),p:clamp(p,10,100),w:S.wind};S.shot=sh;S.phase='fly';S.msg='Incoming...';push();
+ const r=trace(sh);setTimeout(()=>{if(!r.off){S.craters.push([Math.round(r.ix),Math.round(r.iy)]);if(r.hit)S.hp[r.hit]--}
+  S.msg=r.hit?'💥 Direct hit on '+FI[r.hit]+'! ('+S.hp[r.hit]+' HP left)':'Missed!';
+  const dead=t=>IDS.filter(i=>S.team[i]===t).every(i=>S.hp[i]<=0);
+  if(dead('A')||dead('B')){S.winner=dead('B')?'A':'B';S.phase='over';S.msg='🏆 Team '+S.winner+' wins!'}else S.phase='idle';S.shot=null;push()},r.pts.length*8+1000)}
+function newGame(){const p=S.players,b=S.buzzer,t=S.team;S=Object.assign(fresh(),{players:p,buzzer:b,team:t});usedQ=[];push()}
+/* ---------- state apply & animation ---------- */
+function showState(s){if(S&&s.rev<S.rev&&role==='player')return;
+ if(anim&&role==='player'){pend=s;return}
+ S=s;Ht=terrain(S.seed,S.craters);
+ if(S.shot&&S.shot.id!==lastShot){lastShot=S.shot.id;anim={r:trace(S.shot),k:0,t0:0}}
+ if(role==='player'&&!S.players[pid]&&me.t)send({type:'JOIN',pid,n:me.n,t:me.t});
+ render()}
+function endAnim(){if(!anim.r.off)carve(Ht,[anim.r.ix,anim.r.iy]);anim=null;if(pend){const p=pend;pend=null;showState(p)}}
+/* ---------- drawing ---------- */
+const cx=$('cv').getContext('2d');
+function frame(){draw();requestAnimationFrame(frame)}
+function draw(){if(!S||!Ht)return;const c=cx,Y=y=>H-y;
+ const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#38bdf8');g.addColorStop(1,'#e0f2fe');c.fillStyle=g;c.fillRect(0,0,W,H);
+ c.beginPath();c.moveTo(0,H);for(let x=0;x<=W;x+=2)c.lineTo(x,Y(Ht[x]));c.lineTo(W,H);c.closePath();c.fillStyle='#d1d5db';c.fill();c.lineWidth=2.5;c.strokeStyle='#111';c.stroke();
+ const aimT=S.phase==='aim'&&S.shooter&&(role==='host'||S.shooter.pid===pid)?S.shooter.t:null;
+ ['A','B'].forEach(t=>{const d=t==='A'?1:-1,tx=t==='A'?40:960,ty=Ht[tx],a=(aimT===t?ang:45)*Math.PI/180;
+  c.fillStyle='#374151';c.fillRect(tx-18,Y(ty+40),36,40);c.fillStyle=COL[t];c.fillRect(tx-22,Y(ty+46),44,8);
+  c.strokeStyle=COL[t];c.lineWidth=9;c.beginPath();c.moveTo(tx,Y(ty+40));c.lineTo(tx+d*Math.cos(a)*34,Y(ty+40+Math.sin(a)*34));c.stroke();
+  c.fillStyle='#111';c.font='bold 13px sans-serif';c.textAlign='center';c.fillText('TOWER '+t,tx,Y(ty+56))});
+ IDS.forEach(i=>{const x=fx(i),y=Y(fy(i)),dead=S.hp[i]<=0;c.save();c.globalAlpha=dead?.35:1;
+  c.beginPath();c.arc(x,y,26,0,7);c.save();c.clip();if(IMG[i].complete)c.drawImage(IMG[i],x-26,y-26,52,52);c.restore();
+  c.lineWidth=4;c.strokeStyle=COL[S.team[i]];c.beginPath();c.arc(x,y,26,0,7);c.stroke();
+  for(let k=0;k<HP0;k++){c.fillStyle=k<S.hp[i]?'#ef4444':'#475569';c.fillRect(x-27+k*11,y-42,9,7)}
+  c.fillStyle='#111';c.font='bold 12px sans-serif';c.textAlign='center';c.fillText(FI[i]+(dead?' ✖':''),x,y-47);c.restore()});
+ const wv=S.phase==='aim'||S.phase==='fly'?S.wind:null;
+ if(wv!==null){c.fillStyle='rgba(15,23,42,.8)';c.fillRect(W/2-90,8,180,30);c.fillStyle='#fff';c.font='bold 15px sans-serif';c.textAlign='center';c.fillText('Wind '+(wv<0?'◀ ':'')+Math.abs(wv).toFixed(1)+(wv>0?' ▶':''),W/2,29)}
+ if(anim){const r=anim.r,n=Math.min(Math.floor(anim.k),r.pts.length-1);
+  c.strokeStyle='#111';c.lineWidth=1;c.beginPath();r.pts.slice(0,n+1).forEach((p,j)=>j?c.lineTo(p[0],Y(p[1])):c.moveTo(p[0],Y(p[1])));c.stroke();
+  const p=r.pts[n];c.fillStyle='#374151';c.beginPath();c.arc(p[0],Y(p[1]),6,0,7);c.fill();c.stroke();
+  if(n<r.pts.length-1)anim.k+=2;else{if(!anim.t0)anim.t0=performance.now();const e=performance.now()-anim.t0;
+   if(!r.off){c.fillStyle='rgba(251,146,60,'+(1-e/600)+')';c.beginPath();c.arc(r.ix,Y(r.iy),CR*(.4+e/500),0,7);c.fill()}
+   if(e>700)endAnim()}}}
+/* ---------- UI ---------- */
+function joinP(t){const n=$('nm').value.trim();if(!n)return $('nm').focus();role='player';me={t,n};sessionStorage.gga_n=n;start();send({type:'JOIN',pid,n,t});send({type:'HELLO'})}
+function joinH(){if(!PASS.includes($('pw').value.trim().toLowerCase()))return $('pwe').classList.remove('hidden');role='host';
+ try{const o=JSON.parse(localStorage.gga_state);S=o&&o.rev?o:fresh()}catch(e){S=fresh()}start();push()}
+function start(){$('login').classList.add('hidden');$('game').classList.remove('hidden')}
+function amBuzzer(){return role==='player'&&S.phase==='open'&&!S.locked[me.t]&&(!S.buzzer[me.t]||S.buzzer[me.t]===pid)}
+function buzz(){if(amBuzzer())send({type:'BUZZ',pid})}
+function pickAns(i){if(role==='host')grade(i===corr);else send({type:'ANS',pid,i})}
+function fire(){if(role==='host')hFire(ang,pow);else send({type:'FIRE',pid,a:ang,p:pow})}
+function setT(i,t){S.team[i]=t;push()}
+function setB(t,id){S.buzzer[t]=S.buzzer[t]===id?null:id;push()}
+function render(){if(!S)return;let h='<div class="card text-center font-bold text-amber-300">'+esc(S.msg)+'</div>';
+ if(S.q&&['ask','open','answer'].includes(S.phase)){const mine=S.phase==='answer'&&(role==='host'||(S.buzzed===me.t&&canBuzz(pid)));
+  h+='<div class="card space-y-2"><div class="font-bold">'+esc(S.q.prompt)+'</div><div class="grid sm:grid-cols-2 gap-2">'+S.q.choices.map((c,i)=>'<button class="btn" '+(mine?'':'disabled')+' onclick="pickAns('+i+')">'+'ABCD'[i]+'. '+esc(c)+(role==='host'&&i===corr?' ✔':'')+'</button>').join('')+'</div></div>'}
+ if(amBuzzer())h+='<button class="btn go w-full text-2xl py-6" onclick="buzz()">🔔 BUZZ! (Space)</button>';
+ if(S.phase==='aim'&&(role==='host'||S.shooter.pid===pid))h+='<div class="card space-y-2"><b>'+(S.shooter.pid===pid?'🎯 You are the shooter!':'Host: fire for '+esc(S.shooter.name))+' - wind '+S.wind.toFixed(1)+'</b>'+
+  '<label class="block text-sm">Angle: <span id="av">'+ang+'</span>°<input type="range" min="5" max="85" value="'+ang+'" class="w-full" oninput="ang=+this.value;$(\'av\').textContent=ang"></label>'+
+  '<label class="block text-sm">Power: <span id="pv">'+pow+'</span><input type="range" min="10" max="100" value="'+pow+'" class="w-full" oninput="pow=+this.value;$(\'pv\').textContent=pow"></label><button class="btn go w-full" onclick="fire()">🔥 FIRE! (Enter)</button></div>';
+ if(role==='player'&&!S.players[pid])h+='<div class="card text-sm text-slate-300">Joining... (if this stays, your team may be full - 30 max).</div>';
+ if(role==='host')h+=hostUI();
+ else h+='<div class="text-xs text-center text-slate-400">You are '+esc(me.n)+' on Team '+me.t+(S.buzzer[me.t]===pid?' - you are the BUZZER 🔔':'')+'</div>';
+ $('panel').innerHTML=h}
+function hostUI(){const ok=['A','B'].every(t=>IDS.filter(i=>S.team[i]===t).length===2);let h='<div class="card space-y-2"><b>Host controls</b>';
+ if(S.phase==='setup'){h+=IDS.map(i=>'<div class="flex items-center gap-2 text-sm"><img src="assets/'+i+'.jpg" class="w-8 h-8 rounded-full"><span class="w-14">'+FI[i]+'</span>'+['A','B'].map(t=>'<button class="btn" style="'+(S.team[i]===t?'background:'+COL[t]+';color:#000':'')+'" onclick="setT(\''+i+'\',\''+t+'\')">Team '+t+'</button>').join('')+'</div>').join('')+
+  '<div class="flex gap-2"><button class="btn" onclick="S.seed=Math.floor(Math.random()*1e9);S.craters=[];push()">🌄 New terrain</button><button class="btn go" '+(ok?'':'disabled')+' onclick="S.phase=\'idle\';S.msg=\'Battle started! Ask a question.\';push()">Start battle</button></div>'+(ok?'':'<p class="text-xs text-rose-300">Each team needs exactly 2 fighters.</p>')}
+ else if(S.phase==='idle')h+='<button class="btn go" onclick="ask()">❓ Ask next question</button>';
+ else if(S.phase==='over')h+='<button class="btn go" onclick="newGame()">🔁 New game (new terrain)</button>';
+ else if(['ask','open'].includes(S.phase))h+='<button class="btn" onclick="S.phase=\'idle\';S.msg=\'Question skipped.\';push()">Skip question</button>';
+ if(S.phase==='answer')h+='<div class="flex gap-2"><button class="btn go" onclick="grade(true)">✔ Mark correct</button><button class="btn" onclick="grade(false)">✘ Mark wrong</button></div>';
+ h+='</div><div class="grid sm:grid-cols-2 gap-3">'+['A','B'].map(t=>{const m=Object.entries(S.players).filter(([k,p])=>p[1]===t);
+  return '<div class="card"><b style="color:'+COL[t]+'">Team '+t+' ('+m.length+'/30)</b><div class="flex flex-wrap gap-1 mt-2">'+(m.map(([k,p])=>'<button class="btn" style="padding:3px 8px;'+(S.buzzer[t]===k?'background:#f59e0b;color:#000':'')+'" onclick="setB(\''+t+'\',\''+k+'\')">'+(S.buzzer[t]===k?'🔔 ':'')+esc(p[0])+'</button>').join('')||'<span class="text-xs text-slate-400">No players yet</span>')+'</div><p class="text-xs text-slate-400 mt-1">Tap a name to make them the buzzer.</p></div>'}).join('')+'</div>';return h}
+addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)||!S)return;
+ if(e.code==='Space'){e.preventDefault();buzz()}else if(e.key==='Enter'&&S.phase==='aim'&&(role==='host'||S.shooter.pid===pid))fire()});
+$('nm').value=sessionStorage.gga_n||'';connect();frame();
+</script>
+<script src="class-footer.js"></script>
+</body></html>
