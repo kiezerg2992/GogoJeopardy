@@ -2365,7 +2365,7 @@ function renderTV() {
   <script>
 /* ================= ARTILLERY (lives inside the same site) ================= */
 (function () {
-  const W = 1000, H = 500, G = 300, VMAX = 640, CR = 32, HP0 = 5, CAP = 30;
+  const W = 1000, H = 500, G = 300, VMAX = 580, CR = 32, HP0 = 5, CAP = 30;
   const FI = { ki: 'Ki', oscar: 'Oscar', aina: 'Aina', tene: 'Tene' }, IDS = Object.keys(FI);
   const COL = { A: '#22c55e', B: '#d946ef' };
   const IMG = {};
@@ -2384,11 +2384,11 @@ function renderTV() {
   const isHost = () => currentRole === 'host';
 
   let S = null, roster = {}, Ht = null, anim = null, pend = null, lastShot = 0;
-  let fired = false, dragging = false, dragPt = null, ang = 45, pow = 60, corr = 0, usedQ = [], tAns = null, acked = false, full = false;
+  let clouds = [], parts = [], shakeT = 0, lastT = 0, fired = false, dragging = false, dragPt = null, ang = 45, pow = 60, corr = 0, usedQ = [], tAns = null, acked = false, full = false;
   let myT = sessionStorage.getItem('gga_t') || null;
 
   const fresh = () => ({
-    seed: Math.floor(Math.random() * 1e9), craters: [],
+    seed: fairSeed(), craters: [],
     hp: { ki: HP0, oscar: HP0, aina: HP0, tene: HP0 },
     team: { ki: 'A', oscar: 'A', aina: 'B', tene: 'B' },
     buzzer: { A: null, B: null }, cnt: { A: 0, B: 0 },
@@ -2416,6 +2416,22 @@ function renderTV() {
     }
     cr.forEach(c => carve(h, c));
     return h;
+  }
+  // Try 80 random maps and keep the fairest: similar tower heights, similar fighter heights,
+  // gentle slopes under towers/fighters, and no wall far taller than the towers.
+  function fairSeed() {
+    let best = Math.floor(Math.random() * 1e9), bs = 1e9;
+    for (let k = 0; k < 80; k++) {
+      const sd = Math.floor(Math.random() * 1e9), h = terrain(sd, []);
+      const avg = xs => xs.reduce((s, x) => s + h[x], 0) / xs.length;
+      const slope = x => Math.abs(h[Math.min(W, x + 18)] - h[Math.max(0, x - 18)]);
+      let mx = 0; for (let x = 150; x <= 850; x += 5) mx = Math.max(mx, h[x]);
+      const top = Math.max(h[40], h[960]);
+      const sc = Math.abs(h[40] - h[960]) + 1.2 * Math.abs(avg([190, 340]) - avg([810, 660])) +
+        [40, 190, 340, 660, 810, 960].reduce((s, x) => s + Math.max(0, slope(x) - 40), 0) + Math.max(0, mx - (top + 140)) * 2;
+      if (sc < bs) { bs = sc; best = sd; }
+    }
+    return best;
   }
   function fx(i) { const m = IDS.filter(k => S.team[k] === S.team[i]); return S.team[i] === 'A' ? [190, 340][m.indexOf(i)] : [810, 660][m.indexOf(i)]; }
   const fy = i => Ht[Math.round(fx(i))] + 26;
@@ -2475,7 +2491,7 @@ function renderTV() {
       const m = Object.entries(roster).filter(([k, p]) => p[1] === t);
       const pk = m.length ? m[Math.floor(Math.random() * m.length)] : null;   // random shooter from the winning team
       S.shooter = { t, pid: pk ? pk[0] : null, name: pk ? pk[1][0] : 'Host' };
-      S.wind = Math.round((Math.random() * 2 - 1) * 300) / 10;               // new wind every shot (-30..30)
+      S.wind = Math.round((Math.random() * 2 - 1) * 600) / 10;               // new wind every shot (-60..60)
       S.phase = 'aim'; S.msg = 'Correct! ' + S.shooter.name + ' (Team ' + t + ') was randomly picked to shoot!';
     } else {
       S.locked[t] = 1; S.buzzed = null;
@@ -2503,8 +2519,11 @@ function renderTV() {
   /* ---------- messages ---------- */
   window.artInit = function () {   // called when the host opens Artillery
     if (!isHost()) return;
-    if (!S) { try { const o = JSON.parse(localStorage.getItem('gogo_art')); if (o && o.S) { S = o.S; roster = o.roster || {}; S.phase = S.phase === 'fly' ? 'idle' : S.phase; S.shot = null; } } catch (e) {} }
-    if (!S) { S = fresh(); roster = {}; }
+    let keep = null;
+    if (S) keep = { team: S.team, buzzer: S.buzzer };
+    else { try { const o = JSON.parse(localStorage.getItem('gogo_art')); if (o && o.S) { roster = o.roster || {}; keep = { team: o.S.team, buzzer: o.S.buzzer }; } } catch (e) {} }
+    S = fresh(); if (keep) { S.team = keep.team; S.buzzer = keep.buzzer; }
+    usedQ = []; anim = null; pend = null;
     push();
   };
   window.artPush = function () { if (isHost() && S) push(); };
@@ -2534,7 +2553,8 @@ function renderTV() {
     if (!isHost() && S && s.rev < S.rev) return;
     if (anim && !isHost()) { pend = s; return; }
     S = s; fired = false; Ht = terrain(S.seed, S.craters);
-    if (S.shot && S.shot.id !== lastShot) { lastShot = S.shot.id; anim = { r: trace(S.shot), k: 0, t0: 0 }; }
+    if (!clouds.length || clouds.seed !== S.seed) { const r = rng(S.seed + 7); clouds = Array.from({ length: 6 }, () => ({ x: r() * (W + 300), y: 40 + r() * 150, s: .7 + r() * .8 })); clouds.seed = S.seed; }
+    if (S.shot && S.shot.id !== lastShot) { lastShot = S.shot.id; anim = { r: trace(S.shot), k: 0, t0: 0, sh: S.shot, fireT: performance.now() }; muzzleSmoke(S.shot.t, S.shot.a); }
     render();
   }
   function endAnim() {
@@ -2551,7 +2571,7 @@ function renderTV() {
   function aimFrom(p) {   // pointer position -> angle + power
     const pv = pivot(), dx = Math.max(1, S.shooter.t === 'A' ? p[0] - pv[0] : pv[0] - p[0]), dy = p[1] - pv[1];
     ang = clamp(Math.round(Math.atan2(dy, dx) * 180 / Math.PI), 5, 85);
-    pow = clamp(Math.round(Math.hypot(dx, dy) / 300 * 100), 10, 100);
+    pow = clamp(Math.round(Math.hypot(dx, dy) / 320 * 100), 10, 100);
   }
   cv.addEventListener('pointerdown', e => { if (!canAim()) return; e.preventDefault(); dragging = true; dragPt = ptr(e); aimFrom(dragPt); try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
   cv.addEventListener('pointermove', e => { if (!dragging) return; dragPt = ptr(e); aimFrom(dragPt); });
@@ -2565,18 +2585,48 @@ function renderTV() {
   function frame() { try { draw(); } catch (e) {} requestAnimationFrame(frame); }
   function draw() {
     if (!S || !Ht || $('artView').classList.contains('hidden')) return;
+    const now = performance.now(), dt = Math.min(.05, (now - (lastT || now)) / 1000); lastT = now;
+    c.save();
+    if (now - shakeT < 280) { const m = 7 * (1 - (now - shakeT) / 280); c.translate((Math.random() - .5) * m, (Math.random() - .5) * m); }
     const Y = y => H - y;
-    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#38bdf8'); g.addColorStop(1, '#e0f2fe');
-    c.fillStyle = g; c.fillRect(0, 0, W, H);
-    c.beginPath(); c.moveTo(0, H); for (let x = 0; x <= W; x += 2) c.lineTo(x, Y(Ht[x])); c.lineTo(W, H); c.closePath();
-    c.fillStyle = '#d1d5db'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = '#111'; c.stroke();
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#2d9cdb'); g.addColorStop(.7, '#9bd8f5'); g.addColorStop(1, '#e8f6fd');
+    c.fillStyle = g; c.fillRect(-10, -10, W + 20, H + 20);
+    // clouds drift with the wind
+    const drift = 4 + (S.wind || 0) * .6;
+    clouds.forEach(cl => {
+      const x = (((cl.x + now / 1000 * drift * cl.s) % (W + 300)) + (W + 300)) % (W + 300) - 150;
+      c.fillStyle = 'rgba(255,255,255,.85)';
+      [[0, 0, 30], [28, 6, 24], [-28, 8, 22], [8, -12, 22]].forEach(p => { c.beginPath(); c.arc(x + p[0] * cl.s, cl.y + p[1] * cl.s, p[2] * cl.s, 0, 7); c.fill(); });
+    });
+    // ground: dirt with a grass edge
+    const land = () => { c.beginPath(); c.moveTo(0, H + 5); for (let x = 0; x <= W; x += 2) c.lineTo(x, Y(Ht[x])); c.lineTo(W, H + 5); c.closePath(); };
+    const dg = c.createLinearGradient(0, H - 380, 0, H); dg.addColorStop(0, '#b0834f'); dg.addColorStop(1, '#5e4126');
+    land(); c.fillStyle = dg; c.fill();
+    c.save(); land(); c.clip(); c.lineJoin = 'round';
+    c.beginPath(); for (let x = 0; x <= W; x += 2) x ? c.lineTo(x, Y(Ht[x])) : c.moveTo(x, Y(Ht[x]));
+    c.lineWidth = 22; c.strokeStyle = '#7a5a36'; c.stroke();
+    c.lineWidth = 12; c.strokeStyle = '#4caf50'; c.stroke(); c.restore();
+    c.beginPath(); for (let x = 0; x <= W; x += 2) x ? c.lineTo(x, Y(Ht[x])) : c.moveTo(x, Y(Ht[x]));
+    c.lineWidth = 2; c.strokeStyle = '#14532d'; c.stroke();
     const aimT = S.phase === 'aim' && S.shooter && (isHost() || S.shooter.pid === myPid) ? S.shooter.t : null;
     ['A', 'B'].forEach(t => {
-      const d = t === 'A' ? 1 : -1, tx = t === 'A' ? 40 : 960, ty = Ht[tx], a = (aimT === t ? ang : 45) * Math.PI / 180;
-      c.fillStyle = '#374151'; c.fillRect(tx - 18, Y(ty + 40), 36, 40);
-      c.fillStyle = COL[t]; c.fillRect(tx - 22, Y(ty + 46), 44, 8);
-      c.strokeStyle = COL[t]; c.lineWidth = 9; c.beginPath(); c.moveTo(tx, Y(ty + 40)); c.lineTo(tx + d * Math.cos(a) * 34, Y(ty + 40 + Math.sin(a) * 34)); c.stroke();
-      c.fillStyle = '#111'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillText('TOWER ' + t, tx, Y(ty + 56));
+      const d = t === 'A' ? 1 : -1, tx = t === 'A' ? 40 : 960, ty = Ht[tx];
+      const a = (aimT === t ? ang : (anim && anim.sh && anim.sh.t === t ? anim.sh.a : 45)) * Math.PI / 180;
+      const rec = anim && anim.sh && anim.sh.t === t ? Math.max(0, 9 * (1 - (now - anim.fireT) / 220)) : 0;
+      // stone tower on a solid base
+      c.fillStyle = '#6b7280'; c.fillRect(tx - 26, Y(ty + 40), 52, 52);
+      c.strokeStyle = '#4b5563'; c.lineWidth = 1.5;
+      for (let r = 0; r < 4; r++) { c.beginPath(); c.moveTo(tx - 26, Y(ty + 40 - r * 13)); c.lineTo(tx + 26, Y(ty + 40 - r * 13)); c.stroke(); }
+      c.fillStyle = COL[t]; c.fillRect(tx - 30, Y(ty + 46), 60, 8);
+      c.strokeStyle = '#111'; c.lineWidth = 2; c.strokeRect(tx - 26, Y(ty + 40), 52, 52);
+      // cannon
+      const px = tx, py = ty + 48, L = 40 - rec;
+      c.lineCap = 'round'; c.strokeStyle = '#111827'; c.lineWidth = 14; c.beginPath(); c.moveTo(px, Y(py)); c.lineTo(px + d * Math.cos(a) * L, Y(py + Math.sin(a) * L)); c.stroke();
+      c.strokeStyle = '#374151'; c.lineWidth = 10; c.beginPath(); c.moveTo(px, Y(py)); c.lineTo(px + d * Math.cos(a) * L, Y(py + Math.sin(a) * L)); c.stroke();
+      c.strokeStyle = COL[t]; c.lineWidth = 11; c.beginPath(); c.moveTo(px + d * Math.cos(a) * (L - 9), Y(py + Math.sin(a) * (L - 9))); c.lineTo(px + d * Math.cos(a) * L, Y(py + Math.sin(a) * L)); c.stroke();
+      c.lineCap = 'butt';
+      c.fillStyle = '#1f2937'; c.beginPath(); c.arc(px, Y(py), 13, 0, 7); c.fill(); c.fillStyle = COL[t]; c.beginPath(); c.arc(px, Y(py), 6, 0, 7); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.9)'; c.font = 'bold 26px sans-serif'; c.textAlign = 'center'; c.fillText(t, tx, Y(ty + 6));
     });
     IDS.forEach(i => {
       const x = fx(i), y = Y(fy(i)), dead = S.hp[i] <= 0;
@@ -2598,24 +2648,56 @@ function renderTV() {
       c.fillText('Angle ' + ang + '   Power ' + pow + '%', W / 2, 62);
     }
     if (S.phase === 'aim' || S.phase === 'fly') {
-      const wv = S.wind;
-      c.fillStyle = 'rgba(15,23,42,.8)'; c.fillRect(W / 2 - 90, 8, 180, 30);
-      c.fillStyle = '#fff'; c.font = 'bold 15px sans-serif'; c.textAlign = 'center';
-      c.fillText('Wind ' + (wv < 0 ? '<< ' : '') + Math.abs(wv).toFixed(1) + (wv > 0 ? ' >>' : ''), W / 2, 29);
+      const wv = S.wind, len = Math.abs(wv) / 60 * 70, dir = wv < 0 ? -1 : 1, cxw = W / 2;
+      c.fillStyle = 'rgba(15,23,42,.82)'; c.beginPath(); c.roundRect ? c.roundRect(cxw - 130, 8, 260, 34, 10) : c.rect(cxw - 130, 8, 260, 34); c.fill();
+      c.fillStyle = '#fff'; c.font = 'bold 14px sans-serif'; c.textAlign = 'left'; c.fillText('WIND ' + Math.abs(wv).toFixed(0), cxw - 118, 30);
+      c.strokeStyle = '#fbbf24'; c.fillStyle = '#fbbf24'; c.lineWidth = 4; c.lineCap = 'round';
+      const x0 = cxw + 40 - dir * len / 2, x1 = cxw + 40 + dir * len / 2;
+      c.beginPath(); c.moveTo(x0, 25); c.lineTo(x1, 25); c.stroke();
+      c.beginPath(); c.moveTo(x1 + dir * 8, 25); c.lineTo(x1 - dir * 2, 18); c.lineTo(x1 - dir * 2, 32); c.closePath(); c.fill(); c.lineCap = 'butt';
     }
     if (anim) {
       const r = anim.r, n = Math.min(Math.floor(anim.k), r.pts.length - 1);
-      c.strokeStyle = '#111'; c.lineWidth = 1; c.beginPath();
+      c.strokeStyle = 'rgba(17,17,17,.35)'; c.lineWidth = 1.5; c.beginPath();
       r.pts.slice(0, n + 1).forEach((p, j) => j ? c.lineTo(p[0], Y(p[1])) : c.moveTo(p[0], Y(p[1]))); c.stroke();
-      const p = r.pts[n]; c.fillStyle = '#374151'; c.beginPath(); c.arc(p[0], Y(p[1]), 6, 0, 7); c.fill(); c.stroke();
+      const p = r.pts[n];
+      if (!anim.t0) { c.fillStyle = '#1f2937'; c.strokeStyle = '#111'; c.lineWidth = 2; c.beginPath(); c.arc(p[0], Y(p[1]), 6, 0, 7); c.fill(); c.stroke(); }
+      const e0 = now - anim.fireT;   // muzzle flash
+      if (e0 < 200) {
+        const sh = anim.sh, d = sh.t === 'A' ? 1 : -1, tx = sh.t === 'A' ? 40 : 960, ty = Ht[tx] + 48, aa = sh.a * Math.PI / 180;
+        const fxp = tx + d * Math.cos(aa) * 46, fyp = ty + Math.sin(aa) * 46, rr = 10 + e0 / 7;
+        const fg = c.createRadialGradient(fxp, Y(fyp), 1, fxp, Y(fyp), rr); fg.addColorStop(0, 'rgba(255,255,200,' + (1 - e0 / 200) + ')'); fg.addColorStop(1, 'rgba(251,146,60,0)');
+        c.fillStyle = fg; c.beginPath(); c.arc(fxp, Y(fyp), rr, 0, 7); c.fill();
+      }
       if (n < r.pts.length - 1) anim.k += 2;
       else {
-        if (!anim.t0) anim.t0 = performance.now();
-        const e = performance.now() - anim.t0;
-        if (!r.off) { c.fillStyle = 'rgba(251,146,60,' + Math.max(0, 1 - e / 600) + ')'; c.beginPath(); c.arc(r.ix, Y(r.iy), CR * (.4 + e / 500), 0, 7); c.fill(); }
+        if (!anim.t0) { anim.t0 = now; if (!r.off) { impactFx(r); shakeT = now; } }
+        const e = now - anim.t0;
+        if (!r.off) {
+          c.fillStyle = 'rgba(251,191,36,' + Math.max(0, .9 - e / 450) + ')'; c.beginPath(); c.arc(r.ix, Y(r.iy), CR * (.3 + e / 600), 0, 7); c.fill();
+          c.fillStyle = 'rgba(239,68,68,' + Math.max(0, .8 - e / 500) + ')'; c.beginPath(); c.arc(r.ix, Y(r.iy), CR * (.2 + e / 900), 0, 7); c.fill();
+        }
         if (e > 700) endAnim();
       }
     }
+    // particles (dust, smoke, sparks)
+    parts = parts.filter(q => q.life > 0);
+    parts.forEach(q => {
+      q.life -= dt; q.vy -= q.g * dt; q.x += q.vx * dt; q.y += q.vy * dt;
+      const al = Math.max(0, q.life / q.max); c.fillStyle = q.col; c.globalAlpha = al * .85;
+      c.beginPath(); c.arc(q.x, Y(q.y), q.r * (q.grow ? (2 - al) : al + .3), 0, 7); c.fill(); c.globalAlpha = 1;
+    });
+    c.restore();
+  }
+  function muzzleSmoke(team, a) {
+    const d = team === 'A' ? 1 : -1, tx = team === 'A' ? 40 : 960, ty = Ht[tx] + 48, aa = a * Math.PI / 180;
+    for (let k = 0; k < 9; k++) parts.push({ x: tx + d * Math.cos(aa) * 44, y: ty + Math.sin(aa) * 44, vx: d * (30 + Math.random() * 70) * Math.cos(aa), vy: (20 + Math.random() * 60) * Math.sin(aa) + Math.random() * 25, g: -15, life: .7 + Math.random() * .5, max: 1.2, r: 6 + Math.random() * 6, col: '#e5e7eb', grow: 1 });
+  }
+  function impactFx(r) {
+    const cols = ['#7a5a36', '#a47c4c', '#5e4126', '#9ca3af'];
+    for (let k = 0; k < 28; k++) { const an = Math.random() * Math.PI, sp = 60 + Math.random() * 190; parts.push({ x: r.ix, y: r.iy, vx: Math.cos(an) * sp * (Math.random() < .5 ? -1 : 1), vy: Math.sin(an) * sp, g: 420, life: .6 + Math.random() * .6, max: 1.2, r: 3 + Math.random() * 4, col: cols[k % 4] }); }
+    for (let k = 0; k < 8; k++) parts.push({ x: r.ix + (Math.random() - .5) * 30, y: r.iy + 5, vx: (Math.random() - .5) * 40, vy: 25 + Math.random() * 40, g: -10, life: 1 + Math.random() * .5, max: 1.5, r: 9 + Math.random() * 8, col: '#d1d5db', grow: 1 });
+    if (r.hit) for (let k = 0; k < 16; k++) { const an = Math.random() * 6.28, sp = 80 + Math.random() * 160; parts.push({ x: fx(r.hit), y: fy(r.hit), vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, g: 300, life: .5 + Math.random() * .4, max: .9, r: 3 + Math.random() * 3, col: k % 2 ? '#ef4444' : '#fbbf24' }); }
   }
 
   /* ---------- buttons & screens ---------- */
@@ -2627,9 +2709,10 @@ function renderTV() {
     fire() { fired = true; if (isHost()) hFire(ang, pow); else sendMsg({ type: 'ART_FIRE', pid: myPid, a: ang, p: pow }); },
     team(i, t) { S.team[i] = t; push(); },
     buzzerOf(t, id) { S.buzzer[t] = S.buzzer[t] === id ? null : id; push(); },
-    terrain() { S.seed = Math.floor(Math.random() * 1e9); S.craters = []; push(); },
+    terrain() { S.seed = fairSeed(); S.craters = []; push(); },
     start() { S.phase = 'idle'; S.msg = 'Battle started! Ask the first question.'; push(); },
     ask, grade, newGame,
+    setup() { if (!confirm('Go back to setup? This restarts the battle (HP and terrain reset).')) return; const b = S.buzzer, tm = S.team; S = Object.assign(fresh(), { buzzer: b, team: tm }); usedQ = []; push(); },
     skip() { S.phase = 'idle'; S.msg = 'Question skipped.'; push(); },
     claim() { sendMsg({ type: 'ART_CLAIM', pid: myPid, n: myName, t: myT }); },
     unclaim() { sendMsg({ type: 'ART_UNCLAIM', pid: myPid }); }
@@ -2677,8 +2760,8 @@ function renderTV() {
         '<div class="flex gap-2"><button class="abtn" onclick="art.terrain()">New terrain</button><button class="abtn ago" ' + (ok ? '' : 'disabled') + ' onclick="art.start()">Start battle</button></div>' +
         (ok ? '' : '<p class="text-xs text-rose-300">Each team needs exactly 2 fighters.</p>');
     }
-    else if (S.phase === 'idle') h += '<button class="abtn ago" onclick="art.ask()">Ask next question</button>';
-    else if (S.phase === 'over') h += '<button class="abtn ago" onclick="art.newGame()">New game (new terrain)</button>';
+    else if (S.phase === 'idle') h += '<div class="flex flex-wrap gap-2"><button class="abtn ago" onclick="art.ask()">Ask next question</button><button class="abtn" onclick="art.setup()">Change fighters / restart</button></div>';
+    else if (S.phase === 'over') h += '<div class="flex flex-wrap gap-2"><button class="abtn ago" onclick="art.newGame()">New game (new terrain)</button><button class="abtn" onclick="art.setup()">Change fighters</button></div>';
     else if (['ask', 'open'].includes(S.phase)) h += '<button class="abtn" onclick="art.skip()">Skip question</button>';
     if (S.phase === 'answer') h += '<div class="flex gap-2"><button class="abtn ago" onclick="art.grade(true)">Mark correct</button><button class="abtn" onclick="art.grade(false)">Mark wrong</button></div>';
     h += '</div><div class="grid sm:grid-cols-2 gap-3">' + ['A', 'B'].map(t => {
