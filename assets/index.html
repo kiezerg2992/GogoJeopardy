@@ -1,0 +1,2788 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GogoJeopardy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0284c7',
+              700: '#0369a1',
+              900: '#0c4a6e',
+            },
+            gold: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom animations & glow effects */
+    .glow-gold {
+      box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.4);
+    }
+    .glow-blue {
+      box-shadow: 0 0 25px -5px rgba(56, 189, 248, 0.4);
+    }
+    .tile-hover:hover {
+      transform: translateY(-2px);
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-urgent {
+      animation: pulse-ring 0.8s infinite ease-in-out;
+    }
+
+    /* ===== Duck race scene ===== */
+    .duck-scene { position: relative; overflow: hidden; background: linear-gradient(180deg, #5f9a45 0%, #6faa4e 12%, #86bd60 19%, #9fd8f7 20.2%, #55aef0 40%, #3a92e0 75%, #2f82d3 100%); }
+    .ds-grass { position: absolute; left: 0; right: 0; top: 0; height: 20%; background:
+      radial-gradient(ellipse at 12% 110%, #3f7a34 0 38%, transparent 62%), radial-gradient(ellipse at 38% 120%, #4c8a3a 0 40%, transparent 65%),
+      radial-gradient(ellipse at 66% 110%, #3b7430 0 38%, transparent 62%), radial-gradient(ellipse at 92% 120%, #56933f 0 40%, transparent 65%),
+      linear-gradient(180deg, #2d5f2a, #5f9a45); filter: blur(1.5px); }
+    .ds-waves { position: absolute; left: 0; right: 0; top: 20%; bottom: 0; background:
+      repeating-linear-gradient(100deg, rgba(255,255,255,.09) 0 36px, rgba(255,255,255,0) 36px 120px),
+      repeating-linear-gradient(80deg, rgba(255,255,255,.05) 0 22px, rgba(255,255,255,0) 22px 90px);
+      background-size: 240px 100%, 180px 100%; animation: dsDrift 9s linear infinite; }
+    @keyframes dsDrift { from { background-position: 0 0, 0 0; } to { background-position: -240px 0, -180px 0; } }
+    .ds-cloud { position: absolute; height: 34px; border-radius: 999px; background: rgba(255,255,255,.28); filter: blur(7px); animation: dsCloud 60s linear infinite; }
+    @keyframes dsCloud { from { transform: translateX(-30px); } 50% { transform: translateX(60px); } to { transform: translateX(-30px); } }
+    .ds-finish { position: absolute; top: 20%; bottom: 0; left: 86%; width: 24px; transform: skewX(-12deg);
+      background: repeating-conic-gradient(#0f172a 0 25%, #f8fafc 0 50%) 0 0 / 24px 24px; box-shadow: 0 0 18px rgba(0,0,0,.35); }
+    .ds-finish span { position: absolute; top: -22px; left: 50%; transform: translateX(-50%) skewX(12deg); font-size: 11px; font-weight: 900; letter-spacing: .12em; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+    .ds-pill { position: absolute; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 999px; color: #fff; font-weight: 800; background: rgba(110,120,90,.82); border: 2px solid rgba(255,255,255,.35); backdrop-filter: blur(4px); }
+    .ds-clockpill { top: 12px; left: 50%; transform: translateX(-50%); font-size: 26px; padding: 4px 22px; font-variant-numeric: tabular-nums; }
+    .ds-needpill { top: 14px; left: 14px; font-size: 13px; background: rgba(15,23,42,.6); }
+    .ds-cd { position: absolute; z-index: 40; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(48px, 12vw, 150px); font-weight: 900; color: #fff; text-shadow: 0 6px 30px rgba(0,0,0,.45); pointer-events: none; }
+    .ds-cd.hidden { display: none; }
+    .ds-ducks { position: absolute; inset: 0; }
+    .ds-duck { position: absolute; transition: left .95s cubic-bezier(.25,.8,.3,1), top .5s ease; will-change: left; }
+    .ds-bob { width: 100%; height: 100%; animation: dsBob 1.7s ease-in-out infinite; }
+    @keyframes dsBob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-3px) rotate(1.5deg); } }
+    .ds-tag { position: absolute; bottom: 92%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: var(--fs, 12px); font-weight: 700; line-height: 1; color: #1e293b; padding: 3px 8px; border-radius: 6px; background: rgba(226,236,250,.88); border: 1px solid rgba(255,255,255,.7); max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+    .ds-duck.fin .ds-tag { background: rgba(253,224,71,.95); }
+    .ds-duck.dq { opacity: .5; filter: grayscale(1); }
+    .ds-duck.dq .ds-bob { animation: dsSink 3s ease-in-out infinite; }
+    @keyframes dsSink { 0%, 100% { transform: translateY(4px) rotate(8deg); } 50% { transform: translateY(8px) rotate(12deg); } }
+    .ds-final { position: absolute; z-index: 30; left: 50%; top: 52%; transform: translate(-50%, -50%); width: min(92%, 820px); max-height: 86%; overflow-y: auto; text-align: center; padding: 24px; border-radius: 28px; background: rgba(2,6,23,.88); border: 2px solid rgba(251,191,36,.5); backdrop-filter: blur(6px); }
+    .ds-final.hidden { display: none; }
+    .ds-hop { animation: dsHop .45s ease-out; }
+    @keyframes dsHop { 0% { transform: translateY(0); } 40% { transform: translateY(-9px); } 100% { transform: translateY(0); } }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans antialiased select-none overflow-x-hidden">
+  <div id="app" class="min-h-screen flex flex-col justify-between">
+    
+    <!-- TOP NAVIGATION BAR -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Brand / Title -->
+        <div class="flex items-center space-x-3">
+          <div class="bg-amber-500/20 border border-amber-500/40 p-2 rounded-xl flex items-center justify-center text-amber-400 font-black text-xl">
+            GoGo
+          </div>
+          <div>
+            <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+              Jeopardy Training Arcade
+            </h1>
+            <p class="text-xs text-slate-400 hidden sm:block">Interactive Team Training System</p>
+          </div>
+        </div>
+
+        <!-- Role Badge & Header Controls -->
+        <div class="flex items-center space-x-3">
+          <!-- Sync status -->
+          <div id="syncPill" class="sync-pill text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 font-semibold">Sync: connecting...</div>
+
+          <!-- Audio Toggle -->
+          <button id="muteBtn" onclick="toggleMute()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm border border-slate-700 transition flex items-center gap-1.5" title="Toggle Sound">
+            <svg id="audioIcon" class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+            <span class="text-xs hidden md:inline">Audio</span>
+          </button>
+
+          <!-- Current Role Indicator -->
+          <div id="roleBadgeContainer" class="flex items-center bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200">
+            <!-- Dynamic role badge inserted here -->
+          </div>
+
+          <button id="hostModeBtn" onclick="openModeModal()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-700 transition">Games</button>
+          <button id="hostTvBtn" onclick="toggleTV(true)" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-700 transition">TV Mode</button>
+
+          <!-- Admin Question Editor Button (Only for Host) -->
+          <button id="hostEditorBtn" onclick="openEditorModal()" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md shadow-amber-500/10">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            <span>Question Editor</span>
+          </button>
+
+          <!-- Change Role / Logout Button -->
+          <button onclick="logoutRole()" class="p-2 bg-slate-800 hover:bg-rose-900/50 hover:text-rose-300 text-slate-400 rounded-lg text-xs border border-slate-700 transition" title="Change Role">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6 flex-1">
+
+      <!-- SCOREBOARD & HOST CONTROLS BAR -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        
+        <!-- Group 1 Score Card -->
+        <div id="cardGroup1" class="lg:col-span-4 bg-slate-900/90 border-2 border-slate-800 rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full bg-cyan-400"></div>
+              <span class="text-sm font-bold tracking-wider text-slate-300 uppercase">Group 1</span>
+            </div>
+            <span id="g1BuzzStatus" class="text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-400 border border-slate-700">Idle</span>
+          </div>
+          <div class="flex items-baseline justify-between mt-2">
+            <div id="scoreGroup1" class="text-3xl md:text-4xl font-black text-cyan-400 tracking-tight">Points: 0</div>
+            <div id="g1SubText" class="text-xs text-slate-500 font-medium">Spacebar / 'A' Key</div>
+          </div>
+          <!-- Buzzer Action Button for Group 1 Player -->
+          <div id="g1AdjustBtns" class="hidden mt-3 flex gap-2">
+            <button onclick="adjustScore('group1', -50)" class="flex-1 py-2 bg-slate-800 hover:bg-rose-900/50 text-rose-300 font-bold rounded-xl text-sm border border-slate-700 transition">- 50</button>
+            <button onclick="adjustScore('group1', 50)" class="flex-1 py-2 bg-slate-800 hover:bg-emerald-900/50 text-emerald-300 font-bold rounded-xl text-sm border border-slate-700 transition">+ 50</button>
+            <button onclick="freeSeat('group1')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-semibold rounded-xl border border-slate-700 transition">Free seat</button>
+          </div>
+          <div id="g1BuzzBtnContainer" class="mt-3 hidden">
+            <button id="buzzBtnG1" onclick="playerBuzz('group1')" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 active:bg-cyan-600 text-slate-950 font-black rounded-xl text-base uppercase tracking-wider transition shadow-lg shadow-cyan-500/20 active:scale-95">
+              BUZZ IN NOW!
+            </button>
+          </div>
+        </div>
+
+        <!-- Center Status / Host Banner -->
+        <div class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden">
+          <div id="gameStatusTag" class="text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">Game Status</div>
+          <div id="gameStatusText" class="text-base md:text-lg font-bold text-slate-100 mb-2">Select a Question Tile</div>
+          
+          <!-- Host Control Controls (Shown only to Admin/Host) -->
+          <div id="hostControlsPanel" class="hidden flex-wrap items-center justify-center gap-2 w-full mt-1">
+            <button id="goSignalBtn" onclick="giveGoSignal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition shadow-md shadow-amber-500/20 flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+              Give Go Signal
+            </button>
+            <button onclick="resetBuzzers()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">
+              Reset Buzzers
+            </button>
+            <button onclick="resetScores()" class="px-3 py-2 bg-slate-800 hover:bg-rose-900/40 text-rose-300 font-semibold rounded-xl text-xs transition border border-slate-700">
+              Reset Game Scores
+            </button>
+          </div>
+        </div>
+
+        <!-- Group 2 Score Card -->
+        <div id="cardGroup2" class="lg:col-span-4 bg-slate-900/90 border-2 border-slate-800 rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full bg-emerald-400"></div>
+              <span class="text-sm font-bold tracking-wider text-slate-300 uppercase">Group 2</span>
+            </div>
+            <span id="g2BuzzStatus" class="text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-400 border border-slate-700">Idle</span>
+          </div>
+          <div class="flex items-baseline justify-between mt-2">
+            <div id="scoreGroup2" class="text-3xl md:text-4xl font-black text-emerald-400 tracking-tight">Points: 0</div>
+            <div id="g2SubText" class="text-xs text-slate-500 font-medium">Spacebar / 'L' Key</div>
+          </div>
+          <!-- Buzzer Action Button for Group 2 Player -->
+          <div id="g2AdjustBtns" class="hidden mt-3 flex gap-2">
+            <button onclick="adjustScore('group2', -50)" class="flex-1 py-2 bg-slate-800 hover:bg-rose-900/50 text-rose-300 font-bold rounded-xl text-sm border border-slate-700 transition">- 50</button>
+            <button onclick="adjustScore('group2', 50)" class="flex-1 py-2 bg-slate-800 hover:bg-emerald-900/50 text-emerald-300 font-bold rounded-xl text-sm border border-slate-700 transition">+ 50</button>
+            <button onclick="freeSeat('group2')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-semibold rounded-xl border border-slate-700 transition">Free seat</button>
+          </div>
+          <div id="g2BuzzBtnContainer" class="mt-3 hidden">
+            <button id="buzzBtnG2" onclick="playerBuzz('group2')" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-base uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 active:scale-95">
+              BUZZ IN NOW!
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- JEOPARDY BOARD GRID -->
+      <div class="bg-slate-900/60 p-3 md:p-5 rounded-2xl border border-slate-800 shadow-2xl">
+        <div id="jeopardyBoard" class="grid grid-cols-5 gap-2 md:gap-3">
+          <!-- Dynamic Board generated via JS -->
+        </div>
+      </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900/80 border-t border-slate-800 py-3 px-4 text-center text-xs text-slate-500">
+      GoGoGrandparent Orientation Training Arcade &bull; Made by Ki and Tene's Favorite Class - September 2026- Orientation Class2
+    </footer>
+  </div>
+
+
+  <!-- LOGIN / ROLE SELECTION MODAL OVERLAY -->
+  <div id="loginModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl space-y-6">
+      
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black text-2xl mb-1">
+          GG
+        </div>
+        <h2 class="text-2xl font-black text-white tracking-tight">Select Arcade Role</h2>
+        <p class="text-xs text-slate-400">Hosts need a password. Players wait in the waiting room until the host opens a game.</p>
+      </div>
+
+      <!-- Role Selection Buttons -->
+      <div class="space-y-3">
+        <!-- Host / Admin -->
+        <button id="roleBtnHost" onclick="selectRole('host')" class="w-full p-4 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:bg-slate-800 hover:border-amber-500/50 text-left transition group flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="p-3 rounded-xl bg-amber-500/20 text-amber-400 group-hover:scale-105 transition">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-white flex items-center gap-2">
+                <span>Host</span>
+                <span id="badgeStatusHost" class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Available</span>
+              </div>
+              <div class="text-xs text-slate-400">Controls questions, Go Signals, and scoring overrides</div>
+            </div>
+          </div>
+          <svg class="w-5 h-5 text-slate-500 group-hover:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+
+        <!-- Player -->
+        <button id="roleBtnPlayer" onclick="selectRole('player')" class="w-full p-4 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:bg-slate-800 hover:border-cyan-500/50 text-left transition flex items-center justify-between group">
+          <div class="flex items-center space-x-3">
+            <div class="p-3 rounded-xl bg-cyan-500/20 text-cyan-400 font-black text-sm">P</div>
+            <div>
+              <div class="text-sm font-bold text-white">Player</div>
+              <div class="text-xs text-slate-400">Join the waiting room. The host decides which game you play.</div>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <div id="hostPwPanel" class="hidden bg-slate-800/60 border border-amber-500/40 rounded-2xl p-4 space-y-3">
+        <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider">Host Password</label>
+        <div class="flex gap-2">
+          <input id="hostPwInput" type="password" autocomplete="off" onkeydown="if(event.key==='Enter')submitHostPassword()" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Enter password">
+          <button onclick="submitHostPassword()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs">Enter</button>
+        </div>
+        <p id="hostPwError" class="hidden text-xs text-rose-400">Wrong password. Try again.</p>
+      </div>
+
+      <div id="playerNamePanel" class="hidden bg-slate-800/60 border border-cyan-500/40 rounded-2xl p-4 space-y-3">
+        <label class="block text-xs font-bold text-cyan-400 uppercase tracking-wider">Your Name</label>
+        <div class="flex gap-2">
+          <input id="playerNameInput" maxlength="20" autocomplete="off" onkeydown="if(event.key==='Enter')submitPlayerName()" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="Enter your name">
+          <button onclick="submitPlayerName()" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs">Join</button>
+        </div>
+        <p id="playerNameError" class="hidden text-xs text-rose-400">Please enter your name.</p>
+      </div>
+
+      <div id="loginWarning" class="text-xs text-rose-400 bg-rose-950/40 border border-rose-800/50 p-3 rounded-xl hidden text-center">
+        Role currently occupied in another active browser tab!
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- QUESTION VIEW MODAL (ACTIVE QUESTION TILE) -->
+  <div id="questionModal" class="fixed inset-0 z-40 bg-slate-950/95 backdrop-blur-lg flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+      
+      <!-- Top Question Header Info -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <span id="modalCategoryTag" class="text-xs font-black uppercase tracking-widest text-amber-400">CATEGORY</span>
+          <h3 id="modalValueTag" class="text-2xl md:text-3xl font-black text-white">$100</h3>
+        </div>
+        
+        <!-- Difficulty Timer Indicator -->
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span id="timerDisplay" class="font-mono font-bold text-lg text-white">00s</span>
+          </div>
+          <button onclick="closeQuestionModal()" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- TIMER PROGRESS BAR -->
+      <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+        <div id="timerProgressBar" class="bg-amber-500 h-full w-full transition-all duration-100"></div>
+      </div>
+
+      <!-- LOCKED STATE CONTAINER (For Players when no team has buzzed in yet) -->
+      <div id="lockedStateContainer" class="hidden my-8 py-10 px-6 border-2 border-dashed border-amber-500/40 bg-amber-500/5 rounded-2xl text-center space-y-3">
+        <div class="inline-flex p-4 rounded-full bg-amber-500/20 text-amber-400 mb-1">
+          <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        </div>
+        <h4 class="text-xl font-extrabold text-amber-400 tracking-tight">QUESTION LOCKED</h4>
+        <p class="text-sm text-slate-300 max-w-md mx-auto">A group must buzz in to reveal the question and answer choices!</p>
+        <p class="text-xs text-amber-400/80 italic">Host can press <span class="font-bold text-amber-300">[ Give Go Signal ]</span> to enable player buzzers.</p>
+      </div>
+
+      <!-- PLAYER BUZZ BUTTON (inside the question popup so it is clickable) -->
+      <div id="modalBuzzWrap" class="hidden">
+        <button id="modalBuzzBtn" onclick="playerBuzz(currentRole)" class="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-lg uppercase tracking-wider pulse-urgent">BUZZ IN NOW!</button>
+      </div>
+
+      <!-- REVEALED QUESTION CONTENT -->
+      <div id="revealedStateContainer" class="space-y-6">
+        <!-- Question Text Prompt -->
+        <div id="modalQuestionPrompt" class="text-lg md:text-xl font-bold text-slate-100 leading-relaxed bg-slate-950/60 p-5 rounded-2xl border border-slate-800">
+          Question Prompt Text...
+        </div>
+
+        <!-- Multiple Choice Options Grid -->
+        <div id="modalChoicesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Choice Buttons dynamically rendered -->
+        </div>
+
+        <!-- Open Question Answer Reveal Box (For Open Ended questions) -->
+        <div id="openAnswerBox" class="hidden p-4 rounded-2xl bg-emerald-950/30 border border-emerald-800/50 text-emerald-300 text-sm">
+          <span class="font-bold block text-xs uppercase tracking-wider text-emerald-400 mb-1">Expected Answer:</span>
+          <span id="openAnswerText">Answer string</span>
+        </div>
+      </div>
+
+      <!-- Status Message Banner inside Modal -->
+      <div id="modalStatusBanner" class="p-3 rounded-xl text-center text-xs font-bold hidden">
+        <!-- Dynamic state message -->
+      </div>
+
+      <!-- Host Action Buttons inside Question View (For Admin Judgment) -->
+      <div id="hostModalControls" class="hidden border-t border-slate-800 pt-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="w-full flex flex-wrap items-center gap-2">
+          <span class="text-xs text-slate-400 font-medium">Timer:</span>
+          <input id="timerSecondsInput" type="number" min="5" max="300" onchange="setTimerSeconds(this.value)" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-amber-400 font-bold focus:outline-none focus:border-amber-500 disabled:opacity-50">
+          <span class="text-xs text-slate-400">sec</span>
+          <button id="timerToggleBtn" onclick="toggleQuestionTimer()" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition">Start Timer</button>
+          <button onclick="resetQuestionTimer()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">Reset Timer</button>
+        </div>
+        <div class="text-xs text-slate-400 font-medium">Host Manual Override:</div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="giveGoSignal()" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition">Give Go Signal</button>
+          <button onclick="resetBuzzers()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">Reset Buzzers</button>
+          <button id="answerKeyBtn" onclick="toggleAnswerKey()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">Show Answer</button>
+          <button onclick="awardPoints('correct')" class="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition">
+            + Award Correct
+          </button>
+          <button onclick="awardPoints('incorrect')" class="px-3 py-2 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-xl text-xs transition">
+            - Deduct 50 Pts
+          </button>
+          <button onclick="closeQuestionModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition">
+            Close Board Tile
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ADMIN QUESTION EDITOR (one-page grid) -->
+  <div id="editorModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-6xl max-h-[94vh] flex flex-col shadow-2xl">
+      <div class="flex items-start justify-between gap-3 p-5 border-b border-slate-800">
+        <div>
+          <h2 class="text-lg font-black text-white">Question Editor</h2>
+          <p class="text-xs text-slate-400 mt-1">Edit the whole board on one page, then press Save All. Tick the circle next to each correct answer.</p>
+        </div>
+        <button onclick="closeEditorModal()" class="text-slate-400 hover:text-white text-2xl leading-none px-2" aria-label="Close">&times;</button>
+      </div>
+      <div id="editorGrid" class="flex-1 overflow-y-auto p-5 space-y-5"></div>
+      <div class="border-t border-slate-800 p-4 flex flex-wrap items-center justify-between gap-3">
+        <button onclick="resetAllQuestionsToDefault()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">Reset All Questions to Default</button>
+        <div class="flex items-center gap-3">
+          <button onclick="closeEditorModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Cancel</button>
+          <button onclick="saveEditorGrid()" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-md shadow-amber-500/20">Save All</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE SELECT (host) -->
+  <div id="modeModal" class="fixed inset-0 z-[55] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 hidden overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-6 md:p-8 space-y-5 shadow-2xl">
+      <div class="text-center">
+        <h2 class="text-2xl font-black text-white">Choose a Game</h2>
+        <p class="text-xs text-slate-400 mt-1">Players stay locked in the waiting room until you open a game.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button onclick="setMode('jeopardy')" class="text-left p-5 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:border-amber-500/60 transition space-y-1">
+          <div class="text-lg font-black text-amber-400">Jeopardy</div>
+          <div class="text-xs text-slate-400">Two teams buzz in and pick tiles. Maximum 2 players.</div>
+        </button>
+        <button onclick="setMode('race')" class="text-left p-5 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:border-cyan-500/60 transition space-y-1">
+          <div class="text-lg font-black text-cyan-400">Duck Race</div>
+          <div class="text-xs text-slate-400">Everyone races their own duck - no waiting. Answer questions, first across the finish line wins. Up to 60 players.</div>
+        </button>
+        <button onclick="setMode('artillery')" class="text-left p-5 rounded-2xl border-2 border-slate-800 bg-slate-800/50 hover:border-fuchsia-500/60 transition space-y-1 md:col-span-2">
+          <div class="text-lg font-black text-fuchsia-400">Artillery</div>
+          <div class="text-xs text-slate-400">Two teams (up to 30 each) buzz in, answer, and fire at the other team's tanks. Up to 30 players per team.</div>
+        </button>
+      </div>
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+        <button onclick="setMode('lobby')" class="text-xs text-rose-300 hover:text-rose-200 font-semibold">Lock all games (back to waiting room)</button>
+        <button id="modeCloseBtn" onclick="closeModeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WAITING ROOM (players) -->
+  <div id="lobbyOverlay" class="fixed inset-0 z-[55] bg-slate-950 flex items-center justify-center p-4 hidden">
+    <div class="max-w-md w-full text-center space-y-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black text-2xl">GG</div>
+      <h2 class="text-2xl font-black text-white">Waiting Room</h2>
+      <p class="text-sm text-slate-400">Hang tight! Your host will open a game soon.</p>
+      <div class="space-y-3">
+        <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex items-center justify-between opacity-70">
+          <div class="text-left"><div class="font-bold text-slate-300">Jeopardy</div><div class="text-xs text-slate-500">2 players max</div></div>
+          <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">Locked</span>
+        </div>
+        <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex items-center justify-between opacity-70">
+          <div class="text-left"><div class="font-bold text-slate-300">Duck Race</div><div class="text-xs text-slate-500">Up to 60 players</div></div>
+          <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">Locked</span>
+        </div>
+      </div>
+      <button onclick="logoutRole()" class="text-xs text-slate-500 hover:text-slate-300">Leave</button>
+    </div>
+  </div>
+
+  <!-- JEOPARDY SEATS (players) -->
+  <div id="seatOverlay" class="fixed inset-0 z-[55] bg-slate-950 flex items-center justify-center p-4 hidden">
+    <div class="max-w-md w-full text-center space-y-5">
+      <h2 class="text-2xl font-black text-white">Jeopardy</h2>
+      <p class="text-sm text-slate-400">Only 2 players can play. Take a seat to join a team.</p>
+      <div id="seatBody" class="space-y-3"></div>
+      <button onclick="logoutRole()" class="text-xs text-slate-500 hover:text-slate-300">Leave</button>
+    </div>
+  </div>
+
+  <!-- DUCK RACE SCREEN -->
+  <div id="raceView" class="fixed inset-0 z-[45] bg-slate-950 flex flex-col hidden">
+    <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-black flex items-center justify-center text-sm">DR</div>
+        <div><div class="text-sm font-black text-white">Duck Race</div><div id="raceSub" class="text-xs text-slate-400"></div></div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="sync-pill text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 font-semibold">Sync: connecting...</div>
+        <button onclick="openRaceEditor()" class="race-host-only hidden px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs">Edit Questions</button>
+        <button onclick="toggleTV(true)" class="race-host-only hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs border border-slate-700">TV Mode</button>
+        <button onclick="openModeModal()" class="race-host-only hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs border border-slate-700">Games</button>
+        <button onclick="logoutRole()" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 rounded-lg text-xs border border-slate-700">Leave</button>
+      </div>
+    </div>
+    <div id="raceHostScene" class="hidden w-full shrink-0" style="height:min(42vh,380px)"></div>
+    <div id="raceBody" class="flex-1 overflow-y-auto p-4 md:p-6 max-w-6xl w-full mx-auto"></div>
+  </div>
+
+  <!-- ARTILLERY SCREEN -->
+  <style>
+    #artCv{width:100%;height:auto;border-radius:16px;border:2px solid #1e293b}
+    .acard{background:rgba(15,23,42,.9);border:1px solid #1e293b;border-radius:16px;padding:12px;color:#f1f5f9}
+    .abtn{padding:8px 14px;border-radius:12px;font-weight:700;font-size:13px;background:#334155;color:#f1f5f9}
+    .abtn:hover{background:#475569}.abtn:disabled{opacity:.4}
+    .ago{background:#f59e0b;color:#0f172a}.ago:hover{background:#fbbf24}
+  </style>
+  <div id="artView" class="fixed inset-0 z-[45] bg-slate-950 flex flex-col hidden">
+    <div class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 font-black flex items-center justify-center text-sm">AR</div>
+        <div><div class="text-sm font-black text-white">Artillery</div><div id="artSub" class="text-xs text-slate-400"></div></div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="sync-pill text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 font-semibold">Sync: connecting...</div>
+        <button onclick="openRaceEditor()" class="race-host-only hidden px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs">Edit Questions</button>
+        <button onclick="openModeModal()" class="race-host-only hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs border border-slate-700">Games</button>
+        <button onclick="logoutRole()" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 rounded-lg text-xs border border-slate-700">Leave</button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-3 md:p-5 max-w-5xl w-full mx-auto space-y-3">
+      <canvas id="artCv" width="1000" height="500"></canvas>
+      <div id="artPanel" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- TV MODE -->
+  <div id="tvOverlay" class="fixed inset-0 z-[70] bg-slate-950 hidden overflow-y-auto">
+    <button onclick="toggleTV(false)" class="fixed top-4 right-4 z-10 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs border border-slate-700">Exit TV Mode (Esc)</button>
+    <div id="tvBody" class="max-w-6xl mx-auto p-6 md:p-10"></div>
+  </div>
+
+  <!-- RACE QUESTION EDITOR -->
+  <div id="raceEditorModal" class="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-5xl max-h-[94vh] flex flex-col shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-black text-white">Duck Race Questions</h2>
+          <p class="text-xs text-slate-400 mt-1">Multiple choice only, up to 30 questions (every player gets all of them in a random order). Tick the circle next to the correct answer. Leave a choice blank to use fewer choices (minimum 2).</p>
+        </div>
+        <button onclick="closeRaceEditor()" class="text-slate-400 hover:text-white text-2xl leading-none px-2" aria-label="Close">&times;</button>
+      </div>
+      <div id="raceEditorList" class="flex-1 overflow-y-auto p-5 space-y-4"></div>
+      <div class="border-t border-slate-800 p-4 flex flex-wrap items-center justify-between gap-3">
+        <button onclick="addRaceRow()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700">+ Add Question</button>
+        <div class="flex items-center gap-3">
+          <button onclick="closeRaceEditor()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Cancel</button>
+          <button onclick="saveRaceEditor()" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs">Save Questions</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* GAME DATA & DEFAULT QUESTIONS */
+    const DEFAULT_BOARD_DATA = [
+      {
+        id: "cat1",
+        title: "Ride Requests",
+        questions: [
+          { val: 100, prompt: "What information is essential when requesting a ride for a senior member?", type: "multiple", choices: ["Pickup location & destination", "Member's favorite music genre", "Driver's shoe size", "Car color preference"], correct: 0, timer: 15 },
+          { val: 200, prompt: "How far in advance should ride requests ideally be placed?", type: "multiple", choices: ["At least 2 hours prior", "3 days minimum", "Exactly 5 minutes before", "No advance time needed"], correct: 0, timer: 15 },
+          { val: 300, prompt: "What should you do if a member needs specialized wheelchair accessible vehicles?", type: "multiple", choices: ["Note WAV requirement in ride dispatch", "Tell member to walk", "Cancel membership", "Assign standard sedan"], correct: 0, timer: 20 },
+          { val: 400, prompt: "How are extra stops requested during a ride handled?", type: "multiple", choices: ["Added via agent dispatch prior to trip", "Driver handles cash payments directly", "Extra stops are forbidden", "Rider controls meter"], correct: 0, timer: 20 },
+          { val: 500, prompt: "Describe the primary protocol when a rider is unresponsive at pickup.", type: "open", answer: "Contact emergency contact & alert dispatch operator immediately", timer: 30 }
+        ]
+      },
+      {
+        id: "cat2",
+        title: "Home & Health",
+        questions: [
+          { val: 100, prompt: "Which home service can be coordinated for senior meals?", type: "multiple", choices: ["Meals on Wheels / Grocery delivery", "Gourmet Chef catering", "5-star restaurant bookings", "Food truck dispatch"], correct: 0, timer: 15 },
+          { val: 200, prompt: "What information is needed to schedule prescription pickups?", type: "multiple", choices: ["Pharmacy name, address, & pickup name", "Doctor's home address", "Medication formula chart", "Pharmacy owner's name"], correct: 0, timer: 15 },
+          { val: 300, prompt: "Can GoGoGrandparent assist with home maintenance requests?", type: "multiple", choices: ["Yes, via trusted service partners", "No, strictly rides only", "Only for gardening", "Only on weekends"], correct: 0, timer: 20 },
+          { val: 400, prompt: "How do operators verify authorization for family member updates?", type: "multiple", choices: ["Verify listed authorized contact PIN/info", "Ask for favorite movie", "Allow anyone who calls", "Send a postcard"], correct: 0, timer: 20 },
+          { val: 500, prompt: "What steps are taken for urgent home assistance inquiries?", type: "open", answer: "Assess urgency, verify safety, and connect to appropriate primary contact or service", timer: 30 }
+        ]
+      },
+      {
+        id: "cat3",
+        title: "Account & Billing",
+        questions: [
+          { val: 100, prompt: "How are membership fees typically billed?", type: "multiple", choices: ["Monthly auto-renewal to registered card", "Cash in mail", "Crypto currency only", "Annual check payment"], correct: 0, timer: 15 },
+          { val: 200, prompt: "What is included in the basic GoGoGrandparent plan?", type: "multiple", choices: ["24/7 operator access & ride dispatching", "Free unlimited car purchases", "Airline ticket refunds", "Free smartphones"], correct: 0, timer: 15 },
+          { val: 300, prompt: "How can a member update their payment method?", type: "multiple", choices: ["Call customer support or update online portal", "Text random number", "Pay driver cash", "Mail physical coin"], correct: 0, timer: 20 },
+          { val: 400, prompt: "What happens if a payment fails during ride booking?", type: "multiple", choices: ["Agent prompts user to update billing info", "Account permanently deleted", "Police called", "Ride double charged"], correct: 0, timer: 20 },
+          { val: 500, prompt: "Explain the policy regarding ride reimbursement disputes.", type: "open", answer: "Review trip logs, GPS track, and agent notes to issue credit if justified", timer: 30 }
+        ]
+      },
+      {
+        id: "cat4",
+        title: "Safety & Support",
+        questions: [
+          { val: 100, prompt: "Who receives automatic SMS notifications when a ride begins?", type: "multiple", choices: ["Designated family members / caregivers", "Local news stations", "Random contacts", "All members in zip code"], correct: 0, timer: 15 },
+          { val: 200, prompt: "What feature monitors rides in real-time for safety anomalies?", type: "multiple", choices: ["GoGo Guardian Monitoring", "Satellite Laser Tracking", "Manual Driver Surveillance", "None"], correct: 0, timer: 15 },
+          { val: 300, prompt: "What should an agent do if a member sounds distressed?", type: "multiple", choices: ["Stay calm, follow safety protocol, alert supervisor", "Hang up immediately", "Transfer to hold music", "Laugh it off"], correct: 0, timer: 20 },
+          { val: 400, prompt: "How are driver ratings and feedback recorded?", type: "multiple", choices: ["Logged after ride completion in system", "Written in paper notebook", "Not tracked", "Posted on public social media"], correct: 0, timer: 20 },
+          { val: 500, prompt: "What is the critical step when an accident is reported during a ride?", type: "open", answer: "Confirm rider safety, contact emergency services if needed, notify family & supervisor", timer: 30 }
+        ]
+      },
+      {
+        id: "cat5",
+        title: "Tech & Features",
+        questions: [
+          { val: 100, prompt: "Does a senior need a smartphone to use GoGoGrandparent?", type: "multiple", choices: ["No, any touch-tone phone or landline works", "Yes, latest iPhone required", "Yes, VR headset required", "Yes, smartwatch required"], correct: 0, timer: 15 },
+          { val: 200, prompt: "What number shortcut can members dial for quick ride requests?", type: "multiple", choices: ["Toll-free 1-800 custom phone line", "911", "411", "000"], correct: 0, timer: 15 },
+          { val: 300, prompt: "How do custom location shortcuts (e.g., 'Press 1 for Pharmacy') work?", type: "multiple", choices: ["Pre-configured addresses saved on member account", "Random location selected", "Voice recognition guessing", "Driver selects location"], correct: 0, timer: 20 },
+          { val: 400, prompt: "Can family members order rides on behalf of seniors via app/web?", type: "multiple", choices: ["Yes, via Family Portal / Operator", "No, strictly forbidden", "Only on holidays", "Only via postal mail"], correct: 0, timer: 20 },
+          { val: 500, prompt: "Describe how custom pickup instructions help Uber/Lyft drivers find seniors.", type: "open", answer: "Provides precise landmarks, clothing descriptions, or physical assistance needs to driver", timer: 30 }
+        ]
+      }
+    ];
+
+    // Global State
+    let currentRole = null; // 'host', 'group1', 'group2'
+    let tabId = 'tab_' + Math.random().toString(36).substr(2, 9);
+    let isMuted = false;
+    let showAnswerKey = false;
+
+    let gameState = {
+      board: JSON.parse(JSON.stringify(DEFAULT_BOARD_DATA)),
+      scores: { group1: 0, group2: 0 },
+      activeTile: null, // { catIdx, questionIdx }
+      goSignal: false,
+      buzzedTeam: null, // 'group1', 'group2', or null
+      answeredTiles: {}, // key: "catIdx_qIdx" -> { answeredBy, correct }
+      timerValue: 0,
+      timerRunning: false
+    };
+
+    // BroadcastChannel for Live Cross-Tab Sync
+    const channel = new BroadcastChannel('gogo_jeopardy_arcade_channel');
+    let timerInterval = null;
+
+    /* AUDIO SYNTHESIZER (Web Audio API - No External Sound Files Needed) */
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playTone(freq, type, duration, delay = 0) {
+      if (isMuted) return;
+      try {
+        initAudio();
+        setTimeout(() => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        }, delay);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function playSound(type) {
+      if (isMuted) return;
+      if (type === 'buzz') {
+        // High attention buzz synth
+        playTone(440, 'triangle', 0.15);
+        playTone(880, 'sine', 0.2, 50);
+      } else if (type === 'go') {
+        // Upbeat triple chime
+        playTone(523.25, 'sine', 0.1, 0); // C5
+        playTone(659.25, 'sine', 0.1, 100); // E5
+        playTone(783.99, 'sine', 0.25, 200); // G5
+      } else if (type === 'correct') {
+        // Fanfare chord
+        playTone(523.25, 'triangle', 0.15, 0);
+        playTone(659.25, 'triangle', 0.15, 120);
+        playTone(783.99, 'triangle', 0.15, 240);
+        playTone(1046.50, 'triangle', 0.4, 360);
+      } else if (type === 'wrong') {
+        // Low wrong sound
+        playTone(180, 'sawtooth', 0.3, 0);
+        playTone(140, 'sawtooth', 0.4, 200);
+      } else if (type === 'tick') {
+        playTone(600, 'sine', 0.05, 0);
+      }
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      const btn = document.getElementById('muteBtn');
+      if (isMuted) {
+        btn.classList.add('text-rose-400');
+        btn.classList.remove('text-slate-300');
+      } else {
+        btn.classList.remove('text-rose-400');
+        btn.classList.add('text-slate-300');
+      }
+    }
+
+    // Active Sessions Register in LocalStorage
+    function getActiveSessions() {
+      try {
+        const raw = localStorage.getItem('gogo_jeopardy_sessions');
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function registerSession(role) {
+      const sessions = getActiveSessions();
+      sessions[role] = { tabId, timestamp: Date.now() };
+      localStorage.setItem('gogo_jeopardy_sessions', JSON.stringify(sessions));
+      broadcastSessionState();
+    }
+
+    function unregisterSession() {
+      if (!currentRole) return;
+      const sessions = getActiveSessions();
+      if (sessions[currentRole] && sessions[currentRole].tabId === tabId) {
+        delete sessions[currentRole];
+        localStorage.setItem('gogo_jeopardy_sessions', JSON.stringify(sessions));
+      }
+      broadcastSessionState();
+    }
+
+    function cleanExpiredSessions() {
+      const sessions = getActiveSessions();
+      const now = Date.now();
+      let changed = false;
+      for (const r in sessions) {
+        if (now - sessions[r].timestamp > 6000) { // 6s timeout
+          delete sessions[r];
+          changed = true;
+        }
+      }
+      if (changed) {
+        localStorage.setItem('gogo_jeopardy_sessions', JSON.stringify(sessions));
+      }
+      updateLoginBadges();
+    }
+
+    // Keep session heartbeat alive every 2s
+    setInterval(() => {
+      if (currentRole) {
+        registerSession(currentRole);
+      }
+      cleanExpiredSessions();
+    }, 2000);
+
+    function broadcastSessionState() {
+      channel.postMessage({ type: 'SESSION_UPDATE' });
+    }
+
+    function updateLoginBadges() {
+      const sessions = getActiveSessions();
+      
+      const roles = ['host', 'group1', 'group2'];
+      roles.forEach(r => {
+        const isTaken = sessions[r] && sessions[r].tabId !== tabId;
+        const badge = document.getElementById(`badgeStatus${capitalize(r)}`);
+        const btn = document.getElementById(`roleBtn${capitalize(r)}`);
+        if (badge && btn) {
+          if (isTaken) {
+            badge.innerText = 'Occupied';
+            badge.className = 'text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30';
+          } else {
+            badge.innerText = 'Available';
+            badge.className = 'text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+          }
+        }
+      });
+    }
+
+    const HOST_PASSWORDS = ['yestobangs', 'gogoki'];
+
+    function selectRole(role) {
+      document.getElementById('hostPwPanel').classList.toggle('hidden', role !== 'host');
+      document.getElementById('playerNamePanel').classList.toggle('hidden', role !== 'player');
+      const el = document.getElementById(role === 'host' ? 'hostPwInput' : 'playerNameInput');
+      if (role === 'player' && !el.value) el.value = myName || '';
+      el.focus();
+    }
+
+    function submitPlayerName() {
+      const input = document.getElementById('playerNameInput');
+      const v = input.value.trim().slice(0, 20);
+      if (!v) { document.getElementById('playerNameError').classList.remove('hidden'); return; }
+      document.getElementById('playerNameError').classList.add('hidden');
+      myName = v;
+      try { sessionStorage.setItem('gogo_name', v); } catch (e) {}
+      enterRole('player');
+    }
+
+    function submitHostPassword() {
+      const input = document.getElementById('hostPwInput');
+      const err = document.getElementById('hostPwError');
+      if (HOST_PASSWORDS.includes(input.value.trim().toLowerCase())) {
+        err.classList.add('hidden');
+        input.value = '';
+        document.getElementById('hostPwPanel').classList.add('hidden');
+        enterRole('host');
+      } else {
+        err.classList.remove('hidden');
+        input.select();
+      }
+    }
+
+    function enterRole(role) {
+      const sessions = getActiveSessions();
+      const warning = document.getElementById('loginWarning');
+
+      if (role === 'host' && sessions.host && sessions.host.tabId !== tabId) {
+        warning.classList.remove('hidden');
+        warning.innerText = 'The HOST role is currently active in another tab!';
+        return;
+      }
+
+      warning.classList.add('hidden');
+      currentRole = role;
+      registerSession(role);
+      document.getElementById('loginModal').classList.add('hidden');
+      updateRoleUI();
+      renderBoard();
+
+      if (role === 'host') {
+        // Every host session starts with all games locked until the host opens one
+        gameState.mode = 'lobby';
+        gameState.seats = { group1: null, group2: null };
+        modeOpen = false;
+        syncStateToLocalStorage();
+        const go = () => { broadcastState(); applyViews(); };
+        if (FIREBASE_DB_URL) fetch(BUS_URL, { method: 'DELETE' }).then(go, go); else go();
+      } else {
+        sendMsg({ type: 'HELLO' });
+        applyViews();
+      }
+    }
+
+    function logoutRole() {
+      unregisterSession();
+      currentRole = null;
+      tvOpen = false;
+      document.getElementById('tvOverlay').classList.add('hidden');
+      applyViews();
+      document.getElementById('loginModal').classList.remove('hidden');
+      updateLoginBadges();
+    }
+
+    function updateRoleUI() {
+      const badge = document.getElementById('roleBadgeContainer');
+      const hostControls = document.getElementById('hostControlsPanel');
+      const hostEditorBtn = document.getElementById('hostEditorBtn');
+      const g1BuzzContainer = document.getElementById('g1BuzzBtnContainer');
+      const g2BuzzContainer = document.getElementById('g2BuzzBtnContainer');
+
+      ['g1AdjustBtns', 'g2AdjustBtns', 'hostModeBtn', 'hostTvBtn'].forEach(id => document.getElementById(id).classList.toggle('hidden', currentRole !== 'host'));
+      if (currentRole === 'host') {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 mr-2"></span> <span class="font-bold text-amber-400">Host / Admin</span>`;
+        hostControls.classList.remove('hidden');
+        hostControls.classList.add('flex');
+        hostEditorBtn.classList.remove('hidden');
+        g1BuzzContainer.classList.add('hidden');
+        g2BuzzContainer.classList.add('hidden');
+      } else if (currentRole === 'group1') {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 mr-2"></span> <span class="font-bold text-cyan-400">Group 1 Rep</span>`;
+        hostControls.classList.add('hidden');
+        hostControls.classList.remove('flex');
+        hostEditorBtn.classList.add('hidden');
+        g1BuzzContainer.classList.remove('hidden');
+        g2BuzzContainer.classList.add('hidden');
+      } else if (currentRole === 'group2') {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span> <span class="font-bold text-emerald-400">Group 2 Rep</span>`;
+        hostControls.classList.add('hidden');
+        hostControls.classList.remove('flex');
+        hostEditorBtn.classList.add('hidden');
+        g1BuzzContainer.classList.add('hidden');
+        g2BuzzContainer.classList.remove('hidden');
+      } else if (currentRole === 'player') {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400 mr-2"></span> <span class="font-bold text-slate-300">Player</span>`;
+        hostControls.classList.add('hidden');
+        hostControls.classList.remove('flex');
+        hostEditorBtn.classList.add('hidden');
+        g1BuzzContainer.classList.add('hidden');
+        g2BuzzContainer.classList.add('hidden');
+      }
+    }
+
+    function renderBoard() {
+      const boardEl = document.getElementById('jeopardyBoard');
+      boardEl.innerHTML = '';
+
+      // Render 5 Category Headers
+      gameState.board.forEach((cat, cIdx) => {
+        const catHeader = document.createElement('div');
+        catHeader.className = 'bg-slate-800/90 border border-slate-700/80 rounded-xl p-3 text-center flex flex-col justify-center min-h-[64px] shadow-md';
+        catHeader.innerHTML = `<h3 class="text-xs md:text-sm font-black text-amber-400 uppercase tracking-wider line-clamp-2">${cat.title}</h3>`;
+        boardEl.appendChild(catHeader);
+      });
+
+      // Render 5 Rows of Tiles
+      for (let r = 0; r < 5; r++) {
+        gameState.board.forEach((cat, cIdx) => {
+          const q = cat.questions[r];
+          const tileKey = `${cIdx}_${r}`;
+          const isAnswered = gameState.answeredTiles[tileKey];
+
+          const tileBtn = document.createElement('button');
+          tileBtn.onclick = () => handleTileClick(cIdx, r);
+
+          if (isAnswered) {
+            tileBtn.className = 'bg-slate-900/40 border border-slate-800 text-slate-600 rounded-xl p-4 text-center cursor-not-allowed opacity-50 flex flex-col items-center justify-center font-bold text-lg';
+            tileBtn.disabled = true;
+            tileBtn.innerHTML = `<span>Points: ${q.val}</span><span class="text-[10px] text-slate-500 uppercase mt-0.5">${isAnswered.answeredBy === 'group1' ? 'G1' : 'G2'} ${isAnswered.correct ? '✓' : '✗'}</span>`;
+          } else {
+            tileBtn.className = 'tile-hover bg-slate-800/80 hover:bg-slate-700/90 border-2 border-amber-500/30 hover:border-amber-400 text-amber-400 rounded-xl p-4 text-center transition flex flex-col items-center justify-center font-black text-xl md:text-2xl shadow-lg shadow-black/40';
+            // Notice: NO question type labels on tile! Strictly dollar value.
+            tileBtn.innerHTML = `<span>Points: ${q.val}</span>`;
+          }
+
+          boardEl.appendChild(tileBtn);
+        });
+      }
+    }
+
+    function handleTileClick(catIdx, qIdx) {
+      if (currentRole === 'host') { hostOpenTile(catIdx, qIdx); return; }
+      if (currentRole && currentRole === gameState.pickTeam && !gameState.activeTile) {
+        sendMsg({ type: 'PICK', team: currentRole, catIdx, qIdx });
+      }
+    }
+
+    function hostOpenTile(catIdx, qIdx) {
+      showAnswerKey = false;
+      gameState.banner = null;
+      gameState.activeTile = { catIdx, qIdx };
+      gameState.goSignal = false;
+      gameState.buzzedTeam = null;
+      gameState.timerRunning = false;
+      
+      const q = gameState.board[catIdx].questions[qIdx];
+      gameState.timerValue = q.timer || 15;
+      gameState.timerMax = gameState.timerValue;
+      // If a team won the pick, that team answers this question
+      if (gameState.pickTeam) gameState.buzzedTeam = gameState.pickTeam;
+      gameState.pickTeam = null;
+      gameState.pickPhase = false;
+
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function updateModalView() {
+      const modal = document.getElementById('questionModal');
+      if (!gameState.activeTile) {
+        modal.classList.add('hidden');
+        stopTimer();
+        return;
+      }
+
+      modal.classList.remove('hidden');
+
+      const { catIdx, qIdx } = gameState.activeTile;
+      const cat = gameState.board[catIdx];
+      const q = cat.questions[qIdx];
+
+      document.getElementById('modalCategoryTag').innerText = cat.title;
+      document.getElementById('modalValueTag').innerText = `Points: ${q.val}`;
+
+      const lockedContainer = document.getElementById('lockedStateContainer');
+      const revealedContainer = document.getElementById('revealedStateContainer');
+      const hostControls = document.getElementById('hostModalControls');
+      const statusBanner = document.getElementById('modalStatusBanner');
+
+      // Question visibility logic:
+      // Host ALWAYS sees question prompt and answers.
+      // Players see LOCKED state UNTIL a team buzzes in!
+      if (currentRole === 'host' || gameState.buzzedTeam !== null) {
+        lockedContainer.classList.add('hidden');
+        revealedContainer.classList.remove('hidden');
+      } else {
+        lockedContainer.classList.remove('hidden');
+        revealedContainer.classList.add('hidden');
+      }
+
+      // Render Question Prompt
+      document.getElementById('modalQuestionPrompt').innerText = q.prompt;
+
+      // Render Answer Options
+      const choicesBox = document.getElementById('modalChoicesContainer');
+      const openAnsBox = document.getElementById('openAnswerBox');
+      choicesBox.innerHTML = '';
+
+      if (q.type === 'multiple') {
+        openAnsBox.classList.add('hidden');
+        choicesBox.classList.remove('hidden');
+
+        q.choices.forEach((choiceText, idx) => {
+          const btn = document.createElement('button');
+          btn.onclick = () => submitMultipleChoice(idx);
+          
+          let btnClass = "p-4 rounded-2xl border-2 text-left font-semibold text-sm transition flex items-center justify-between ";
+          
+          if (currentRole === 'host') {
+            // Host only sees the correct answer if they press Show Answer
+            if (showAnswerKey && idx === q.correct) {
+              btnClass += "bg-emerald-950/60 border-emerald-500 text-emerald-200";
+            } else {
+              btnClass += "bg-slate-800/60 border-slate-700 text-slate-300";
+            }
+          } else if (gameState.buzzedTeam === currentRole) {
+            // Active buzzed player can click choice
+            btnClass += "bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-amber-400 text-white cursor-pointer active:scale-[0.99]";
+          } else {
+            // Passive player / not buzzed
+            btnClass += "bg-slate-800/40 border-slate-800 text-slate-400 cursor-not-allowed";
+          }
+
+          btn.className = btnClass;
+          btn.disabled = gameState.buzzedTeam !== currentRole || !gameState.timerRunning;
+
+          const optionLetter = String.fromCharCode(65 + idx);
+          btn.innerHTML = `
+            <div class="flex items-center space-x-3">
+              <span class="w-7 h-7 rounded-lg bg-slate-700 flex items-center justify-center font-bold text-xs text-amber-400">${optionLetter}</span>
+              <span>${choiceText}</span>
+            </div>
+            ${currentRole === 'host' && showAnswerKey && idx === q.correct ? '<span class="text-xs bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-black">CORRECT</span>' : ''}
+          `;
+          choicesBox.appendChild(btn);
+        });
+      } else {
+        // Open Question
+        choicesBox.classList.add('hidden');
+        openAnsBox.classList.toggle('hidden', !(currentRole === 'host' && showAnswerKey));
+        document.getElementById('openAnswerText').innerText = q.answer || "N/A";
+      }
+
+      // Update Timer Display & Progress Bar
+      updateTimerUI();
+
+      // Status Banner Text
+      if (gameState.banner) {
+        statusBanner.className = gameState.banner.cls;
+        statusBanner.innerText = gameState.banner.text;
+      } else if (gameState.buzzedTeam) {
+        statusBanner.classList.remove('hidden');
+        const teamName = gameState.buzzedTeam === 'group1' ? 'GROUP 1' : 'GROUP 2';
+        const colorClass = gameState.buzzedTeam === 'group1' ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-800' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800';
+        statusBanner.className = `p-3 rounded-xl text-center text-xs font-bold ${colorClass}`;
+        statusBanner.innerText = `🔔 ${teamName} BUZZED IN! ${gameState.timerRunning ? 'TIMER IS RUNNING...' : 'WAITING FOR THE HOST TO START THE TIMER'}`;
+      } else if (gameState.goSignal) {
+        statusBanner.classList.remove('hidden');
+        statusBanner.className = 'p-3 rounded-xl text-center text-xs font-bold bg-amber-950/80 text-amber-300 border border-amber-800';
+        statusBanner.innerText = '⚡ BUZZERS ARE OPEN! PLAYERS CAN BUZZ IN NOW!';
+      } else {
+        statusBanner.classList.add('hidden');
+      }
+
+      document.getElementById('answerKeyBtn').innerText = showAnswerKey ? 'Hide Answer' : 'Show Answer';
+      const timerInput = document.getElementById('timerSecondsInput');
+      if (document.activeElement !== timerInput) timerInput.value = gameState.timerMax || q.timer || 15;
+      timerInput.disabled = !!gameState.timerRunning;
+      document.getElementById('timerToggleBtn').innerText = gameState.timerRunning ? 'Pause Timer' : 'Start Timer';
+
+      // Host Controls Visibility in Modal
+      if (currentRole === 'host') {
+        hostControls.classList.remove('hidden');
+      } else {
+        hostControls.classList.add('hidden');
+      }
+
+      const canBuzz = (currentRole === 'group1' || currentRole === 'group2') && gameState.goSignal && !gameState.buzzedTeam && !gameState.banner;
+      document.getElementById('modalBuzzWrap').classList.toggle('hidden', !canBuzz);
+
+      // Sync status text on main board
+      updateMainBoardStatus();
+    }
+
+    function updateMainBoardStatus() {
+      const statusText = document.getElementById('gameStatusText');
+      const g1Status = document.getElementById('g1BuzzStatus');
+      const g2Status = document.getElementById('g2BuzzStatus');
+      document.getElementById('scoreGroup1').innerText = `Points: ${gameState.scores.group1}`;
+      document.getElementById('scoreGroup2').innerText = `Points: ${gameState.scores.group2}`;
+      const sd = gameState.seats || {};
+      document.getElementById('g1SubText').innerText = sd.group1 ? sd.group1.name : "Spacebar / 'A' Key";
+      document.getElementById('g2SubText').innerText = sd.group2 ? sd.group2.name : "Spacebar / 'L' Key";
+
+      if (!gameState.activeTile && gameState.pickPhase) {
+        const t = gameState.pickTeam;
+        const base = 'text-xs px-2 py-0.5 rounded-md font-';
+        const names = { group1: 'Group 1', group2: 'Group 2' };
+        statusText.innerText = t ? `${names[t]} buzzed first - choose a question!` : 'Buzzers open - first to buzz picks the question!';
+        [['group1', g1Status], ['group2', g2Status]].forEach(([g, el]) => {
+          if (!t) { el.innerText = 'READY'; el.className = base + 'bold bg-amber-500/20 text-amber-400 border border-amber-500/40'; }
+          else if (g === t) { el.innerText = 'PICKS!'; el.className = base + 'black bg-amber-500 text-slate-950 animate-pulse'; }
+          else { el.innerText = 'Locked Out'; el.className = base + 'semibold bg-slate-800 text-slate-500 border border-slate-700'; }
+        });
+        return;
+      }
+
+      if (!gameState.activeTile) {
+        statusText.innerText = "Select a Question Tile";
+        g1Status.innerText = "Idle";
+        g1Status.className = "text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-400 border border-slate-700";
+        g2Status.innerText = "Idle";
+        g2Status.className = "text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-400 border border-slate-700";
+        return;
+      }
+
+      if (gameState.buzzedTeam === 'group1') {
+        statusText.innerText = "Group 1 Buzzed In!";
+        g1Status.innerText = "BUZZED!";
+        g1Status.className = "text-xs px-2 py-0.5 rounded-md font-black bg-cyan-500 text-slate-950 animate-pulse";
+        g2Status.innerText = "Locked Out";
+        g2Status.className = "text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-500 border border-slate-700";
+      } else if (gameState.buzzedTeam === 'group2') {
+        statusText.innerText = "Group 2 Buzzed In!";
+        g2Status.innerText = "BUZZED!";
+        g2Status.className = "text-xs px-2 py-0.5 rounded-md font-black bg-emerald-500 text-slate-950 animate-pulse";
+        g1Status.innerText = "Locked Out";
+        g1Status.className = "text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-500 border border-slate-700";
+      } else if (gameState.goSignal) {
+        statusText.innerText = "Buzzers Ready - Go Signal Active!";
+        g1Status.innerText = "READY";
+        g1Status.className = "text-xs px-2 py-0.5 rounded-md font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40";
+        g2Status.innerText = "READY";
+        g2Status.className = "text-xs px-2 py-0.5 rounded-md font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40";
+      } else {
+        statusText.innerText = "Waiting for Host Go Signal";
+        g1Status.innerText = "Waiting";
+        g1Status.className = "text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-400 border border-slate-700";
+        g2Status.innerText = "Waiting";
+        g2Status.className = "text-xs px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-slate-400 border border-slate-700";
+      }
+
+      document.getElementById('scoreGroup1').innerText = `Points: ${gameState.scores.group1}`;
+      document.getElementById('scoreGroup2').innerText = `Points: ${gameState.scores.group2}`;
+    }
+
+    function giveGoSignal() {
+      if (currentRole !== 'host') return;
+      if (!gameState.activeTile) { gameState.pickPhase = true; gameState.pickTeam = null; }
+      
+      gameState.goSignal = true;
+      gameState.banner = null;
+      gameState.buzzedTeam = null;
+      playSound('go');
+      updateMainBoardStatus();
+
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function resetBuzzers() {
+      if (currentRole !== 'host') return;
+      gameState.banner = null;
+      gameState.goSignal = false;
+      gameState.buzzedTeam = null;
+      gameState.pickPhase = false;
+      gameState.pickTeam = null;
+      gameState.timerRunning = false;
+      stopTimer();
+
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+      updateMainBoardStatus();
+    }
+
+    function startQuestionTimer() {
+      if (currentRole !== 'host' || !gameState.activeTile || gameState.timerRunning) return;
+      if (gameState.timerValue <= 0) gameState.timerValue = gameState.timerMax || 15;
+      gameState.banner = null;
+      gameState.timerRunning = true;
+      playSound('go');
+      startTimer();
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function pauseQuestionTimer() {
+      if (currentRole !== 'host' || !gameState.timerRunning) return;
+      gameState.timerRunning = false;
+      stopTimer();
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function toggleQuestionTimer() {
+      if (gameState.timerRunning) pauseQuestionTimer(); else startQuestionTimer();
+    }
+
+    function setTimerSeconds(val) {
+      if (currentRole !== 'host' || !gameState.activeTile || gameState.timerRunning) return;
+      const n = Math.max(5, Math.min(300, parseInt(val) || 15));
+      gameState.timerValue = n;
+      gameState.timerMax = n;
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function resetQuestionTimer() {
+      if (currentRole !== 'host' || !gameState.activeTile) return;
+      gameState.timerRunning = false;
+      stopTimer();
+      gameState.banner = null;
+      gameState.timerValue = gameState.timerMax || 15;
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function setBanner(cls, text) {
+      gameState.banner = { cls, text };
+      updateModalView();
+    }
+
+    // Players only SEND a buzz request; the host decides who was first.
+    function playerBuzz(team) {
+      if (currentRole !== team) return;
+      const canPick = gameState.pickPhase && !gameState.pickTeam;
+      if (!(gameState.activeTile || canPick) || !gameState.goSignal || gameState.buzzedTeam) return;
+      playSound('buzz');
+      sendMsg({ type: 'BUZZ', team });
+    }
+
+    function hostBuzz(team) {
+      if (!gameState.activeTile) {
+        // Pick phase: first team to buzz earns the right to choose the question
+        if (!gameState.pickPhase || !gameState.goSignal || gameState.pickTeam) return;
+        gameState.pickTeam = team;
+        gameState.goSignal = false;
+        playSound('buzz');
+        updateMainBoardStatus();
+        syncStateToLocalStorage();
+        broadcastState();
+        return;
+      }
+      if (!gameState.goSignal || gameState.buzzedTeam) return;
+      gameState.buzzedTeam = team;
+      gameState.goSignal = false;
+      gameState.timerRunning = false; // host starts the timer when the class is ready
+      playSound('buzz');
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+    }
+
+    function startTimer() {
+      stopTimer();
+      timerInterval = setInterval(() => {
+        if (!gameState.timerRunning) return;
+        if (gameState.timerValue > 0) {
+          gameState.timerValue--;
+          if (gameState.timerValue <= 5 && gameState.timerValue > 0) playSound('tick');
+          updateTimerUI();
+        } else if (currentRole === 'host') {
+          handleTimerExpired(); // only the host ends the round
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function updateTimerUI(maxSecs = null) {
+      const timerDisplay = document.getElementById('timerDisplay');
+      const progressBar = document.getElementById('timerProgressBar');
+
+      if (!gameState.activeTile) return;
+      
+      const { catIdx, qIdx } = gameState.activeTile;
+      const q = gameState.board[catIdx].questions[qIdx];
+      const max = maxSecs || gameState.timerMax || q.timer || 15;
+
+      timerDisplay.innerText = `${gameState.timerValue}s`;
+
+      const pct = Math.max(0, Math.min(100, (gameState.timerValue / max) * 100));
+      progressBar.style.width = `${pct}%`;
+
+      if (gameState.timerValue <= 5) {
+        progressBar.className = "bg-rose-500 h-full transition-all duration-300";
+        timerDisplay.className = "font-mono font-black text-lg text-rose-400 animate-pulse";
+      } else {
+        progressBar.className = "bg-amber-500 h-full transition-all duration-300";
+        timerDisplay.className = "font-mono font-bold text-lg text-white";
+      }
+    }
+
+    function handleTimerExpired() {
+      stopTimer();
+      gameState.timerRunning = false;
+      playSound('wrong');
+
+      const buzzed = gameState.buzzedTeam;
+      if (!buzzed) {
+        setBanner('p-3 rounded-xl text-center text-sm font-black bg-amber-950 text-amber-300 border border-amber-800', "⏱️ TIME'S UP!");
+        syncStateToLocalStorage();
+        broadcastState();
+        return;
+      }
+      if (buzzed && (buzzed === 'group1' || buzzed === 'group2')) {
+        // Deduct 50 points as specified
+        gameState.scores[buzzed] -= 50;
+      }
+
+      // Mark tile answered as wrong
+      if (gameState.activeTile) {
+        const { catIdx, qIdx } = gameState.activeTile;
+        gameState.answeredTiles[`${catIdx}_${qIdx}`] = { answeredBy: buzzed, correct: false };
+      }
+
+      setBanner('p-3 rounded-xl text-center text-sm font-black bg-rose-950 text-rose-300 border border-rose-800', `⏱️ TIME EXPIRED! -50 Points deducted from ${buzzed === 'group1' ? 'Group 1' : 'Group 2'}`);
+
+      syncStateToLocalStorage();
+      broadcastState();
+      renderBoard();
+      updateMainBoardStatus();
+    }
+
+    function submitMultipleChoice(choiceIndex) {
+      if (currentRole === 'host') return;
+      sendMsg({ type: 'ANSWER', team: currentRole, idx: choiceIndex });
+    }
+
+    function hostAnswer(team, choiceIndex) {
+      if (!gameState.activeTile || gameState.buzzedTeam !== team || !gameState.timerRunning) return;
+
+      stopTimer();
+      gameState.timerRunning = false;
+
+      const { catIdx, qIdx } = gameState.activeTile;
+      const q = gameState.board[catIdx].questions[qIdx];
+      const isCorrect = (choiceIndex === q.correct);
+      const name = team === 'group1' ? 'Group 1' : 'Group 2';
+
+      if (isCorrect) {
+        playSound('correct');
+        gameState.scores[team] += q.val;
+        setBanner('p-3 rounded-xl text-center text-sm font-black bg-emerald-950 text-emerald-300 border border-emerald-800', `🎉 CORRECT ANSWER! +${q.val} Points awarded to ${name}`);
+      } else {
+        playSound('wrong');
+        gameState.scores[team] -= 50;
+        setBanner('p-3 rounded-xl text-center text-sm font-black bg-rose-950 text-rose-300 border border-rose-800', `❌ INCORRECT! -50 Points deducted from ${name}`);
+      }
+
+      gameState.answeredTiles[`${catIdx}_${qIdx}`] = { answeredBy: team, correct: isCorrect };
+
+      syncStateToLocalStorage();
+      broadcastState();
+      renderBoard();
+      updateMainBoardStatus();
+
+      setTimeout(() => {
+        closeQuestionModal();
+      }, 2000);
+    }
+
+    function awardPoints(type) {
+      if (currentRole !== 'host') return;
+      if (!gameState.activeTile) return;
+
+      stopTimer();
+      gameState.timerRunning = false;
+
+      const { catIdx, qIdx } = gameState.activeTile;
+      const q = gameState.board[catIdx].questions[qIdx];
+      const team = gameState.buzzedTeam || 'group1';
+
+      if (type === 'correct') {
+        playSound('correct');
+        gameState.scores[team] += q.val;
+        gameState.answeredTiles[`${catIdx}_${qIdx}`] = { answeredBy: team, correct: true };
+      } else {
+        playSound('wrong');
+        gameState.scores[team] -= 50;
+        gameState.answeredTiles[`${catIdx}_${qIdx}`] = { answeredBy: team, correct: false };
+      }
+
+      syncStateToLocalStorage();
+      broadcastState();
+      renderBoard();
+      updateMainBoardStatus();
+      closeQuestionModal();
+    }
+
+    function closeQuestionModal() {
+      if (currentRole !== 'host') { document.getElementById('questionModal').classList.add('hidden'); return; }
+      stopTimer();
+      showAnswerKey = false;
+      gameState.banner = null;
+      gameState.timerRunning = false;
+      gameState.activeTile = null;
+      gameState.goSignal = false;
+      gameState.buzzedTeam = null;
+
+      syncStateToLocalStorage();
+      broadcastState();
+      updateModalView();
+      renderBoard();
+    }
+
+    function adjustScore(team, delta) {
+      if (currentRole !== 'host') return;
+      gameState.scores[team] += delta;
+      syncStateToLocalStorage();
+      broadcastState();
+      updateMainBoardStatus();
+    }
+
+    function toggleAnswerKey() {
+      showAnswerKey = !showAnswerKey;
+      updateModalView();
+    }
+
+    function resetScores() {
+      if (currentRole !== 'host') return;
+      gameState.scores = { group1: 0, group2: 0 };
+      gameState.banner = null;
+      gameState.pickPhase = false;
+      gameState.pickTeam = null;
+      gameState.timerRunning = false;
+      stopTimer();
+      gameState.answeredTiles = {};
+      gameState.activeTile = null;
+      gameState.goSignal = false;
+      gameState.buzzedTeam = null;
+
+      syncStateToLocalStorage();
+      broadcastState();
+      renderBoard();
+      updateModalView();
+      updateMainBoardStatus();
+    }
+
+    function openEditorModal() {
+      if (currentRole !== 'host') return;
+      buildEditorGrid();
+      document.getElementById('editorModal').classList.remove('hidden');
+    }
+
+    function closeEditorModal() {
+      document.getElementById('editorModal').classList.add('hidden');
+    }
+
+    function escAttr(t) {
+      return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function buildEditorGrid() {
+      const inp = 'w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500';
+      document.getElementById('editorGrid').innerHTML = gameState.board.map((cat, ci) => {
+        const rows = cat.questions.map((q, qi) => {
+          const k = ci + '_' + qi;
+          const multi = q.type === 'multiple';
+          const ch = q.choices || [];
+          const mc = [0, 1, 2, 3].map(i => `
+            <label class="flex items-center gap-2">
+              <input type="radio" name="ed_correct_${k}" value="${i}" ${(q.correct || 0) === i ? 'checked' : ''} class="accent-amber-500">
+              <span class="text-xs text-slate-500 w-3">${'ABCD'[i]}</span>
+              <input id="ed_ch_${k}_${i}" value="${escAttr(ch[i])}" class="${inp}">
+            </label>`).join('');
+          return `
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start border-t border-slate-800 pt-3">
+              <div class="lg:col-span-1 text-amber-400 font-black text-sm">${q.val}</div>
+              <div class="lg:col-span-4"><textarea id="ed_prompt_${k}" rows="4" class="${inp}">${escAttr(q.prompt)}</textarea></div>
+              <div class="lg:col-span-2 space-y-2">
+                <select id="ed_type_${k}" onchange="toggleRowType('${k}', this.value)" class="${inp}">
+                  <option value="multiple" ${multi ? 'selected' : ''}>Multiple choice</option>
+                  <option value="open" ${multi ? '' : 'selected'}>Open answer</option>
+                </select>
+                <div class="flex items-center gap-2"><input id="ed_timer_${k}" type="number" min="5" max="300" value="${q.timer || 15}" class="${inp}"><span class="text-xs text-slate-500">sec</span></div>
+              </div>
+              <div class="lg:col-span-5">
+                <div id="ed_mc_${k}" class="space-y-1.5 ${multi ? '' : 'hidden'}">${mc}</div>
+                <div id="ed_open_${k}" class="${multi ? 'hidden' : ''}"><input id="ed_open_in_${k}" value="${escAttr(q.answer)}" placeholder="Expected answer" class="${inp}"></div>
+              </div>
+            </div>`;
+        }).join('');
+        return `
+          <section class="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Category ${ci + 1}</span>
+              <input id="ed_title_${ci}" value="${escAttr(cat.title)}" class="${inp} font-bold text-amber-400">
+            </div>${rows}
+          </section>`;
+      }).join('');
+    }
+
+    function toggleRowType(k, type) {
+      document.getElementById('ed_mc_' + k).classList.toggle('hidden', type !== 'multiple');
+      document.getElementById('ed_open_' + k).classList.toggle('hidden', type === 'multiple');
+    }
+
+    function saveEditorGrid() {
+      const v = id => document.getElementById(id).value.trim();
+      const board = JSON.parse(JSON.stringify(gameState.board));
+      board.forEach((cat, ci) => {
+        cat.title = v('ed_title_' + ci) || cat.title;
+        cat.questions.forEach((q, qi) => {
+          const k = ci + '_' + qi;
+          q.prompt = v('ed_prompt_' + k) || q.prompt;
+          q.type = v('ed_type_' + k);
+          q.timer = Math.max(5, Math.min(300, parseInt(v('ed_timer_' + k)) || 15));
+          if (q.type === 'multiple') {
+            const vals = [0, 1, 2, 3].map(i => v(`ed_ch_${k}_${i}`));
+            let last = 3;
+            while (last >= 0 && !vals[last]) last--;
+            q.choices = vals.slice(0, Math.max(last + 1, 2)).map((t, i) => t || 'Choice ' + 'ABCD'[i]);
+            const sel = document.querySelector(`input[name="ed_correct_${k}"]:checked`);
+            q.correct = Math.min(sel ? parseInt(sel.value) : 0, q.choices.length - 1);
+          } else {
+            q.answer = v('ed_open_in_' + k) || q.answer || '';
+          }
+        });
+      });
+      gameState.board = board;
+      syncStateToLocalStorage();
+      broadcastState();
+      broadcastBoard(true);
+      renderBoard();
+      closeEditorModal();
+      if (gameState.activeTile) updateModalView();
+    }
+
+    function resetAllQuestionsToDefault() {
+      if (confirm('Are you sure you want to reset all categories and questions to default?')) {
+        gameState.board = JSON.parse(JSON.stringify(DEFAULT_BOARD_DATA));
+        syncStateToLocalStorage();
+        broadcastState();
+        broadcastBoard(true);
+        renderBoard();
+        closeEditorModal();
+      }
+    }
+
+    function syncStateToLocalStorage() {
+      if (currentRole !== 'host') return;
+      try {
+        localStorage.setItem('gogo_jeopardy_state', JSON.stringify(gameState));
+      } catch (e) {}
+    }
+
+    function loadStateFromLocalStorage() {
+      try {
+        const raw = localStorage.getItem('gogo_jeopardy_state');
+        if (raw) {
+          gameState = JSON.parse(raw);
+        }
+      } catch (e) {}
+    }
+
+    // Free public relay so the host and the players can be on DIFFERENT devices.
+    const RELAY_URL = 'https://ntfy.sh/gogo-orientation-arcade-ki-7f3a9c21';
+    const seenMsgs = new Set();
+
+    // OPTIONAL sturdier sync: paste your Firebase Realtime Database URL here
+    // (looks like https://your-project-default-rtdb.firebaseio.com). Leave '' to use the free relay.
+    const FIREBASE_DB_URL = '';
+    const BUS_URL = FIREBASE_DB_URL.replace(/\/$/, '') + '/arcade_bus.json';
+
+    function setSync(kind, text) {
+      document.querySelectorAll('.sync-pill').forEach(el => {
+        el.innerText = 'Sync: ' + text;
+        el.className = 'sync-pill text-xs px-2.5 py-1.5 rounded-lg border font-semibold ' + (kind === 'ok'
+          ? 'border-emerald-700 bg-emerald-950/60 text-emerald-300'
+          : kind === 'err' ? 'border-rose-700 bg-rose-950/60 text-rose-300'
+          : 'border-slate-700 bg-slate-800 text-slate-400');
+      });
+    }
+
+    function sendMsg(m) {
+      m.sender = tabId;
+      m.mid = tabId + '_' + Date.now() + Math.random().toString(36).slice(2, 6);
+      try { channel.postMessage(m); } catch (e) {}
+      const body = JSON.stringify(m);
+      const req = FIREBASE_DB_URL
+        ? fetch(BUS_URL, { method: 'POST', body: JSON.stringify({ d: body }) })
+        : fetch(RELAY_URL, { method: 'POST', body });
+      req.then(r => {
+        if (r.ok) setSync('ok', 'live');
+        else if (r.status === 429) setSync('err', 'relay limit reached');
+        else setSync('err', 'error ' + r.status);
+      }).catch(() => setSync('err', 'offline'));
+    }
+
+    function relayConnect() {
+      try {
+        if (FIREBASE_DB_URL) {
+          const es = new EventSource(BUS_URL);
+          es.onopen = () => { setSync('ok', 'live'); if (currentRole && currentRole !== 'host') sendMsg({ type: 'HELLO' }); };
+          es.onerror = () => setSync('err', 'reconnecting...');
+          es.addEventListener('put', (e) => {
+            try {
+              const ev = JSON.parse(e.data);
+              if (ev.path === '/' || !ev.data || !ev.data.d) return; // ignore old history
+              handleMsg(JSON.parse(ev.data.d));
+            } catch (err) {}
+          });
+        } else {
+          const es = new EventSource(RELAY_URL + '/sse');
+          es.onopen = () => { setSync('ok', 'live'); if (currentRole && currentRole !== 'host') sendMsg({ type: 'HELLO' }); };
+          es.onerror = () => setSync('err', 'reconnecting...');
+          es.onmessage = (e) => {
+            try {
+              const ev = JSON.parse(e.data);
+              if (ev.event === 'message') handleMsg(JSON.parse(ev.message));
+            } catch (err) {}
+          };
+        }
+      } catch (e) { setSync('err', 'offline'); }
+    }
+
+    // Host sends the game state (small); board questions are sent separately.
+    function broadcastState() {
+      if (currentRole !== 'host') return;
+      syncRacePublic();
+      gameState.rev = Math.max(Date.now(), (gameState.rev || 0) + 1);
+      const { board, ...st } = gameState;
+      sendMsg({ type: 'STATE', state: st });
+      renderTV();
+      if (modeOf() === 'race') renderRace();
+    }
+
+    function broadcastBoard(all) {
+      if (currentRole !== 'host') return;
+      gameState.board.forEach((cat, idx) => {
+        if (all || JSON.stringify(cat) !== JSON.stringify(DEFAULT_BOARD_DATA[idx])) {
+          sendMsg({ type: 'BOARD', idx, cat });
+        }
+      });
+    }
+
+    function applyState(st) {
+      if (st.rev && gameState.rev && st.rev < gameState.rev) return;
+      gameState = Object.assign({}, st, { board: gameState.board });
+      applyViews();
+      renderBoard();
+      updateMainBoardStatus();
+      if (gameState.timerRunning) startTimer(); else stopTimer();
+      if (gameState.activeTile) {
+        updateModalView();
+      } else {
+        document.getElementById('questionModal').classList.add('hidden');
+      }
+    }
+
+    function handleMsg(m) {
+      if (!m || m.sender === tabId) return;
+      if (m.mid) {
+        if (seenMsgs.has(m.mid)) return;
+        seenMsgs.add(m.mid);
+        if (seenMsgs.size > 300) seenMsgs.delete(seenMsgs.values().next().value);
+      }
+      const isHost = currentRole === 'host';
+      if (m.type && m.type.indexOf('ART_') === 0) { if (window.artMsg) artMsg(m, isHost); return; }
+      if (m.type === 'SESSION_UPDATE') updateLoginBadges();
+      else if (m.type === 'STATE' && !isHost) applyState(m.state);
+      else if (m.type === 'BOARD' && !isHost) {
+        gameState.board[m.idx] = m.cat;
+        renderBoard();
+        if (gameState.activeTile) updateModalView();
+      }
+      else if (m.type === 'HELLO' && isHost) scheduleHello();
+      else if (m.type === 'SEAT' && isHost) hostSeat(m);
+      else if (m.type === 'RJOIN' && isHost) raceJoin(m);
+      else if (m.type === 'RP' && isHost) raceProgress(m);
+      else if (m.type === 'RD' && !isHost) racePlayerDeck(m);
+      else if (m.type === 'BUZZ' && isHost) hostBuzz(m.team);
+      else if (m.type === 'PICK' && isHost) { if (m.team === gameState.pickTeam && !gameState.activeTile && !gameState.answeredTiles[m.catIdx + '_' + m.qIdx]) hostOpenTile(m.catIdx, m.qIdx); }
+      else if (m.type === 'ANSWER' && isHost) hostAnswer(m.team, m.idx);
+    }
+
+    channel.onmessage = (event) => handleMsg(event.data);
+
+    // Keyboard Shortcuts (Spacebar, 'A', 'L')
+    window.addEventListener('keydown', (e) => {
+      // Ignore key events if focused in input or textarea
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (currentRole === 'group1') {
+          playerBuzz('group1');
+        } else if (currentRole === 'group2') {
+          playerBuzz('group2');
+        } else if (currentRole === 'host' && modeOf() === 'jeopardy') {
+          giveGoSignal();
+        }
+      } else if (e.key === 'a' || e.key === 'A') {
+        if (currentRole === 'group1') playerBuzz('group1');
+      } else if (e.key === 'l' || e.key === 'L') {
+        if (currentRole === 'group2') playerBuzz('group2');
+      }
+    });
+
+    // Clean up session on window unload
+    window.addEventListener('beforeunload', () => {
+      unregisterSession();
+    });
+
+/* ================= GAME MODES, SEATS & LOBBY ================= */
+    const RACE_CAP = 60;
+    let myPid = sessionStorage.getItem('gogo_pid') || ('p' + Math.random().toString(36).slice(2, 8));
+    try { sessionStorage.setItem('gogo_pid', myPid); } catch (e) {}
+    let myName = sessionStorage.getItem('gogo_name') || '';
+    let modeOpen = false;
+    let tvOpen = false;
+    let helloTimer = null, stateTimer = null, raceRT = null;
+
+    function modeOf() { return gameState.mode || 'lobby'; }
+
+    function scheduleHello() {
+      if (helloTimer) return;
+      helloTimer = setTimeout(() => {
+        helloTimer = null;
+        if (modeOf() === 'jeopardy') broadcastBoard(false);
+        broadcastState();
+        resendRaceDeck();
+        if (modeOf() === 'artillery' && window.artPush) artPush();
+      }, 1200);
+    }
+
+    function scheduleState() {
+      if (stateTimer) return;
+      stateTimer = setTimeout(() => { stateTimer = null; broadcastState(); }, 2000);
+    }
+
+    function setMode(mode) {
+      if (currentRole !== 'host') return;
+      if (gameState.activeTile) {
+        stopTimer();
+        Object.assign(gameState, { activeTile: null, goSignal: false, buzzedTeam: null, timerRunning: false, banner: null, pickPhase: false, pickTeam: null });
+        document.getElementById('questionModal').classList.add('hidden');
+      }
+      gameState.mode = mode;
+      modeOpen = false;
+      if (mode === 'artillery' && window.artInit) artInit();
+      syncStateToLocalStorage();
+      if (mode === 'jeopardy') { broadcastBoard(false); renderBoard(); updateMainBoardStatus(); }
+      broadcastState();
+      applyViews();
+    }
+    function openModeModal() { modeOpen = true; applyViews(); }
+    function closeModeModal() { modeOpen = false; applyViews(); }
+
+    function syncSeatRole() {
+      if (!currentRole || currentRole === 'host') return;
+      let nr = 'player';
+      if (modeOf() === 'jeopardy') {
+        const s = gameState.seats || {};
+        if (s.group1 && s.group1.pid === myPid) nr = 'group1';
+        else if (s.group2 && s.group2.pid === myPid) nr = 'group2';
+      }
+      if (nr !== currentRole) { currentRole = nr; updateRoleUI(); }
+    }
+
+    function applyViews() {
+      const show = (id, on) => document.getElementById(id).classList.toggle('hidden', !on);
+      const r = currentRole, host = r === 'host', m = modeOf(), isPlayer = !!r && !host;
+      if (isPlayer) syncSeatRole();
+      show('modeModal', host && (m === 'lobby' || modeOpen));
+      show('modeCloseBtn', m !== 'lobby');
+      show('lobbyOverlay', isPlayer && m === 'lobby');
+      show('seatOverlay', isPlayer && m === 'jeopardy' && currentRole === 'player');
+      show('raceView', !!r && m === 'race');
+      show('artView', !!r && m === 'artillery');
+      if (r && m === 'artillery' && window.artRender) artRender();
+      document.querySelectorAll('.race-host-only').forEach(b => b.classList.toggle('hidden', !host));
+      if (isPlayer && m === 'jeopardy' && currentRole === 'player') renderSeats();
+      if (isPlayer && m === 'race') racePlayerSync();
+      else if (r && m === 'race') renderRace();
+      renderTV();
+    }
+
+    function renderSeats() {
+      const s = gameState.seats || {};
+      const mine = (s.group1 && s.group1.pid === myPid) || (s.group2 && s.group2.pid === myPid);
+      const card = (g, label, tc, bc) => {
+        const t = s[g];
+        return `<div class="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex items-center justify-between gap-3">
+          <div class="text-left"><div class="font-bold ${tc}">${label}</div><div class="text-xs text-slate-500">${t ? 'Taken by ' + escAttr(t.name) : 'Open seat'}</div></div>
+          ${t ? '<span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">Taken</span>' : `<button onclick="takeSeat('${g}')" class="px-4 py-2 ${bc} text-slate-950 font-bold rounded-xl text-xs">Take seat</button>`}
+        </div>`;
+      };
+      const full = s.group1 && s.group2 && !mine;
+      document.getElementById('seatBody').innerHTML =
+        card('group1', 'Group 1', 'text-cyan-400', 'bg-cyan-500 hover:bg-cyan-400') +
+        card('group2', 'Group 2', 'text-emerald-400', 'bg-emerald-500 hover:bg-emerald-400') +
+        (full ? '<p class="text-sm text-amber-300">Jeopardy is full (2 players max). Please wait for the next game.</p>' : '');
+    }
+
+    function takeSeat(g) { sendMsg({ type: 'SEAT', pid: myPid, name: myName, group: g }); }
+
+    function hostSeat(m) {
+      if (modeOf() !== 'jeopardy' || !['group1', 'group2'].includes(m.group)) return;
+      const s = gameState.seats = gameState.seats || { group1: null, group2: null };
+      const other = m.group === 'group1' ? 'group2' : 'group1';
+      if (s[m.group] && s[m.group].pid !== m.pid) return;
+      if (s[other] && s[other].pid === m.pid) s[other] = null;
+      s[m.group] = { pid: m.pid, name: String(m.name || 'Player').slice(0, 20) };
+      syncStateToLocalStorage();
+      broadcastState();
+      updateMainBoardStatus();
+    }
+
+    function freeSeat(g) {
+      if (currentRole !== 'host' || !gameState.seats) return;
+      gameState.seats[g] = null;
+      syncStateToLocalStorage();
+      broadcastState();
+      updateMainBoardStatus();
+    }
+
+/* ================= DUCK RACE ================= */
+const DUCK_COLORS = ['#facc15', '#fb7185', '#60a5fa', '#4ade80', '#fb923c', '#c084fc', '#2dd4bf', '#f472b6', '#a3e635', '#38bdf8', '#f87171', '#fde047'];
+function duckSVG(c) {
+  return `<svg viewBox="0 0 124 90" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;overflow:visible">
+    <ellipse cx="58" cy="82" rx="54" ry="7" fill="#fff" opacity=".6"/><ellipse cx="58" cy="85" rx="38" ry="4" fill="#fff" opacity=".45"/>
+    <path d="M6 38 C16 36 24 44 28 56 L12 58 C8 52 6 46 6 38Z" fill="${c}"/>
+    <path d="M10 56 C10 74 30 82 60 82 C90 82 106 72 106 54 C106 46 98 42 90 44 C74 48 54 48 38 44 C24 42 10 44 10 56Z" fill="${c}"/>
+    <circle cx="88" cy="32" r="21" fill="${c}"/>
+    <path d="M104 30 C114 26 123 31 119 37 C115 42 107 42 102 39Z" fill="#fb923c"/>
+    <circle cx="95" cy="27" r="3.4" fill="#111827"/><circle cx="96.2" cy="25.8" r="1.1" fill="#fff"/>
+    <path d="M30 56 C40 46 62 48 72 60 C62 72 42 70 30 56Z" fill="#000" opacity=".14"/>
+    <path d="M78 15 C84 10 93 11 97 17" stroke="#fff" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/></svg>`;
+}
+function fmtMs(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+function medal(p) { return p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : '#' + p; }
+
+function defaultRaceQs() {
+  const out = [];
+  DEFAULT_BOARD_DATA.forEach(c => c.questions.forEach(q => {
+    if (q.type === 'multiple') out.push({ prompt: q.prompt, choices: q.choices.slice(), correct: q.correct || 0, timer: q.timer || 20 });
+  }));
+  return out.slice(0, 30);
+}
+function loadRaceQs() {
+  try { const r = JSON.parse(localStorage.getItem('gogo_race_questions')); if (Array.isArray(r) && r.length) return r; } catch (e) {}
+  return defaultRaceQs();
+}
+let raceQs = loadRaceQs();
+let racePct = (() => { const v = parseInt(localStorage.getItem('gogo_race_pct')); return v >= 10 && v <= 100 ? v : 60; })();
+function raceNeed(n, pct) { return Math.max(1, Math.ceil(n * pct / 100)); }
+
+// host-side truth
+let raceH = { players: {}, rid: '', phase: 'idle', t0: 0, tEndAt: 0, cdEnd: 0, placeN: 0, n: 0, need: 0, tGo: null, tState: null, lastCd: 0 };
+// player-side truth
+let raceJoinSent = 0, raceDeckBuf = null;
+function blankMe() { return { rid: '', qs: null, order: [], a: 0, c: 0, w: 0, n: 0, need: 0, st: 'wait', started: false, t0: 0, endAt: 0, qStart: 0, picked: null, flash: null, locked: false, lastSend: 0, tSend: null, tNext: null, resends: 0, lastNeed: 0 }; }
+let myRace = blankMe();
+const ME_KEY = 'gogo_race_me';
+
+function syncRacePublic() {
+  const ids = Object.keys(raceH.players), idle = raceH.phase === 'idle';
+  const n = idle ? raceQs.length : raceH.n;
+  const fin = ids.filter(id => raceH.players[id].st === 'fin').sort((a, b) => raceH.players[a].place - raceH.players[b].place);
+  gameState.race = { phase: raceH.phase, rid: raceH.rid, n, need: idle ? raceNeed(n, racePct) : raceH.need, pct: racePct, players: ids.length, ids, fin };
+  if (raceH.phase === 'final') gameState.race.top = raceRanked().slice(0, 10).map(p => [p.name, p.st === 'fin' ? p.place : 0, p.c, Math.round(p.t / 100) / 10]);
+}
+function renderRaceSoon() {
+  if (raceRT) return;
+  raceRT = setTimeout(() => { raceRT = null; renderRace(); renderTV(); }, 250);
+}
+function raceStateSoon() {
+  if (raceH.tState) return;
+  raceH.tState = setTimeout(() => { raceH.tState = null; broadcastState(); }, 800);
+}
+function raceRanked() {
+  const g = p => p.st === 'fin' ? 0 : p.st === 'dq' ? 2 : 1;
+  return Object.keys(raceH.players).map(id => Object.assign({ pid: id }, raceH.players[id]))
+    .sort((a, b) => g(a) - g(b) || (a.st === 'fin' ? a.place - b.place : b.c - a.c || a.w - b.w || a.name.localeCompare(b.name)));
+}
+
+// ---- host side ----
+function raceJoin(m) {
+  if (modeOf() !== 'race' || !m.pid) return;
+  const name = String(m.name || 'Player').slice(0, 20);
+  const p = raceH.players[m.pid];
+  if (p) { p.name = name; return; }
+  if (raceH.phase !== 'idle' || Object.keys(raceH.players).length >= RACE_CAP) return;
+  raceH.players[m.pid] = { name, ci: Object.keys(raceH.players).length, a: 0, c: 0, w: 0, st: 'idle', place: 0, t: 0 };
+  scheduleState();
+  renderRaceSoon();
+}
+function raceSetPct(v) {
+  racePct = Math.max(10, Math.min(100, parseInt(v) || 60));
+  try { localStorage.setItem('gogo_race_pct', String(racePct)); } catch (e) {}
+  broadcastState();
+}
+function raceStart() {
+  if (currentRole !== 'host' || raceH.phase !== 'idle') return;
+  const ids = Object.keys(raceH.players);
+  if (!ids.length || raceQs.length < 2) return;
+  raceH.rid = 'r' + Date.now().toString(36);
+  raceH.n = raceQs.length; raceH.need = raceNeed(raceH.n, racePct); raceH.placeN = 0;
+  ids.forEach(id => Object.assign(raceH.players[id], { a: 0, c: 0, w: 0, st: 'run', place: 0, t: 0 }));
+  raceH.phase = 'countdown'; raceH.cdEnd = Date.now() + 4000; raceH.lastCd = 0;
+  sendRaceDeck();
+  broadcastState();
+  clearTimeout(raceH.tGo);
+  raceH.tGo = setTimeout(raceGo, 4000);
+}
+function raceGo() {
+  if (raceH.phase !== 'countdown') return;
+  raceH.phase = 'running'; raceH.t0 = Date.now();
+  playSound('go');
+  broadcastState();
+}
+// The whole question deck is sent once (in small chunks) so players never wait on the host between questions.
+function sendRaceDeck() {
+  const qs = raceQs.map(q => ({ p: q.prompt, c: q.choices, a: q.correct, t: q.timer || 20 }));
+  const chunks = []; let cur = [], size = 0;
+  qs.forEach(q => {
+    const s = JSON.stringify(q).length;
+    if (cur.length && size + s > 2400) { chunks.push(cur); cur = []; size = 0; }
+    cur.push(q); size += s;
+  });
+  if (cur.length) chunks.push(cur);
+  chunks.forEach((c, k) => sendMsg({ type: 'RD', rid: raceH.rid, k, kn: chunks.length, n: qs.length, need: raceH.need, qs: c }));
+}
+function resendRaceDeck() {
+  if (currentRole !== 'host' || (raceH.phase !== 'countdown' && raceH.phase !== 'running')) return;
+  sendRaceDeck();
+}
+function raceProgress(m) {
+  const p = raceH.players[m.pid];
+  if (!p || m.rid !== raceH.rid || raceH.phase !== 'running' || p.st !== 'run') return;
+  const n = raceH.n, need = raceH.need;
+  const a = Math.max(p.a, Math.min(n, parseInt(m.a) || 0));
+  const c = Math.max(p.c, Math.min(a, parseInt(m.c) || 0));
+  p.a = a; p.c = c; p.w = a - c;
+  let changed = false;
+  if (c >= need) { p.st = 'fin'; p.place = ++raceH.placeN; p.t = Date.now() - raceH.t0; changed = true; playSound(p.place === 1 ? 'correct' : 'go'); }
+  else if (n - a < need - c) { p.st = 'dq'; p.t = Date.now() - raceH.t0; changed = true; }
+  if (changed) {
+    if (Object.values(raceH.players).every(x => x.st !== 'run')) { raceFinish(); return; }
+    raceStateSoon();
+  }
+  renderRaceSoon();
+}
+function raceFinish() {
+  if (currentRole !== 'host' || (raceH.phase !== 'running' && raceH.phase !== 'countdown')) return;
+  clearTimeout(raceH.tGo);
+  Object.values(raceH.players).forEach(p => { if (p.st === 'run') { p.st = 'dq'; p.t = Date.now() - raceH.t0; } });
+  raceH.phase = 'final'; raceH.tEndAt = Date.now();
+  playSound('correct');
+  broadcastState();
+}
+function raceReset() {
+  if (currentRole !== 'host') return;
+  clearTimeout(raceH.tGo);
+  Object.values(raceH.players).forEach(p => Object.assign(p, { a: 0, c: 0, w: 0, st: 'idle', place: 0, t: 0 }));
+  raceH.phase = 'idle'; raceH.rid = ''; raceH.placeN = 0;
+  broadcastState();
+}
+
+// ---- player side ----
+function ensureRaceJoin() {
+  const r = gameState.race || {}, ids = r.ids || [];
+  if (r.phase !== 'idle' || ids.includes(myPid) || ids.length >= RACE_CAP || Date.now() - raceJoinSent < 3000) return;
+  raceJoinSent = Date.now();
+  sendMsg({ type: 'RJOIN', pid: myPid, name: myName });
+}
+function saveMe() {
+  try { sessionStorage.setItem(ME_KEY, JSON.stringify({ rid: myRace.rid, order: myRace.order, a: myRace.a, c: myRace.c, w: myRace.w, st: myRace.st, t0: myRace.t0, endAt: myRace.endAt, started: myRace.started })); } catch (e) {}
+}
+function restoreMe() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(ME_KEY));
+    if (s && s.rid === myRace.rid && Array.isArray(s.order)) {
+      Object.assign(myRace, { order: s.order, a: s.a, c: s.c, w: s.w, st: s.st, t0: s.t0, endAt: s.endAt, started: !!s.started, qStart: Date.now() });
+    }
+  } catch (e) {}
+}
+function racePlayerDeck(m) {
+  if (!raceDeckBuf || raceDeckBuf.rid !== m.rid) raceDeckBuf = { rid: m.rid, kn: m.kn, parts: {}, n: m.n, need: m.need, qs: null };
+  raceDeckBuf.parts[m.k] = m.qs;
+  if (Object.keys(raceDeckBuf.parts).length >= raceDeckBuf.kn && !raceDeckBuf.qs) {
+    let all = []; for (let k = 0; k < raceDeckBuf.kn; k++) all = all.concat(raceDeckBuf.parts[k] || []);
+    raceDeckBuf.qs = all;
+  }
+  if (currentRole && currentRole !== 'host' && modeOf() === 'race') racePlayerSync();
+}
+function racePlayerSync() {
+  const r = gameState.race || {}, ph = r.phase || 'idle';
+  if (ph === 'idle') {
+    if (myRace.rid) { myRace = blankMe(); try { sessionStorage.removeItem(ME_KEY); } catch (e) {} }
+    ensureRaceJoin(); renderRace(); return;
+  }
+  if (r.rid && r.rid !== myRace.rid) { myRace = blankMe(); myRace.rid = r.rid; restoreMe(); }
+  myRace.n = r.n; myRace.need = r.need;
+  if (!myRace.qs && raceDeckBuf && raceDeckBuf.rid === myRace.rid && raceDeckBuf.qs) myRace.qs = raceDeckBuf.qs;
+  const member = (r.ids || []).includes(myPid);
+  if (ph === 'running' && member && myRace.qs && !myRace.started) {
+    const idx = [...Array(myRace.qs.length).keys()];
+    for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    Object.assign(myRace, { order: idx, a: 0, c: 0, w: 0, st: 'run', started: true, t0: Date.now(), qStart: Date.now(), locked: false });
+    saveMe();
+  }
+  renderRace();
+}
+function curQ() {
+  const i = myRace.locked ? myRace.a - 1 : myRace.a;
+  return myRace.qs ? myRace.qs[myRace.order[i]] : null;
+}
+function raceChoose(i) {
+  if (!myRace.started || myRace.st !== 'run' || myRace.locked || (gameState.race || {}).phase !== 'running') return;
+  resolveAnswer(i);
+}
+function resolveAnswer(pick) {
+  const q = curQ(); if (!q) return;
+  const ok = pick === q.a;
+  myRace.picked = pick; myRace.flash = ok ? 'ok' : pick < 0 ? 'time' : 'bad';
+  myRace.a++; if (ok) myRace.c++; else myRace.w++;
+  myRace.locked = true;
+  playSound(ok ? 'go' : 'wrong');
+  const n = myRace.n, need = myRace.need;
+  if (myRace.c >= need) { myRace.st = 'fin'; myRace.endAt = Date.now(); }
+  else if (n - myRace.a < need - myRace.c) { myRace.st = 'dq'; myRace.endAt = Date.now(); }
+  myRace.resends = 0;
+  sendRaceProgress(myRace.st !== 'run');
+  saveMe(); renderRace();
+  clearTimeout(myRace.tNext);
+  // automatically move on to the next random question - nobody waits for anyone else
+  myRace.tNext = setTimeout(() => {
+    myRace.locked = false; myRace.picked = null; myRace.flash = null; myRace.qStart = Date.now();
+    renderRace();
+  }, ok ? 450 : 900);
+}
+function fireRP() {
+  clearTimeout(myRace.tSend); myRace.tSend = null; myRace.lastSend = Date.now();
+  sendMsg({ type: 'RP', pid: myPid, rid: myRace.rid, a: myRace.a, c: myRace.c, st: myRace.st });
+}
+// progress is coalesced (max ~1 msg/sec per player) to stay friendly to the free relay
+function sendRaceProgress(force) {
+  const gap = Date.now() - myRace.lastSend;
+  if (force || gap >= 1000) fireRP();
+  else if (!myRace.tSend) myRace.tSend = setTimeout(fireRP, 1000 - gap);
+}
+
+function raceTick() {
+  if (modeOf() !== 'race' || !currentRole) return;
+  const now = Date.now();
+  if (currentRole === 'host') {
+    const ph = raceH.phase;
+    const clk = ph === 'running' ? now - raceH.t0 : ph === 'final' ? raceH.tEndAt - raceH.t0 : 0;
+    document.querySelectorAll('.ds-clock').forEach(e => e.innerText = fmtMs(clk));
+    const cd = ph === 'countdown' ? Math.max(0, Math.ceil((raceH.cdEnd - now) / 1000)) : 0;
+    if (ph === 'countdown' && cd !== raceH.lastCd) { raceH.lastCd = cd; if (cd <= 3 && cd > 0) playSound('tick'); }
+    document.querySelectorAll('.ds-cd').forEach(e => {
+      const goFlash = ph === 'running' && now - raceH.t0 < 1200;
+      e.classList.toggle('hidden', !(ph === 'countdown' || goFlash));
+      e.innerText = goFlash ? 'GO!' : cd > 3 ? 'Get ready!' : String(cd);
+    });
+    return;
+  }
+  const r = gameState.race || {};
+  if ((r.phase === 'countdown' || r.phase === 'running') && !myRace.qs && (r.ids || []).includes(myPid) && now - myRace.lastNeed > 4000) {
+    myRace.lastNeed = now; sendMsg({ type: 'HELLO' });
+  }
+  if (myRace.started) {
+    const end = myRace.st === 'run' ? now : (myRace.endAt || now);
+    const ck = document.getElementById('raceClock'); if (ck) ck.innerText = fmtMs(end - myRace.t0);
+  }
+  if (myRace.started && myRace.st === 'run' && !myRace.locked && r.phase === 'running') {
+    const q = curQ();
+    if (q) {
+      const total = q.t * 1000, left = Math.max(0, total - (now - myRace.qStart));
+      const bar = document.getElementById('raceBar'), secs = document.getElementById('raceSecs');
+      if (bar) bar.style.width = (100 * left / total) + '%';
+      if (secs) secs.innerText = Math.ceil(left / 1000) + 's';
+      if (left <= 0) resolveAnswer(-1);
+    }
+  }
+  if (myRace.started && myRace.st !== 'run' && myRace.resends < 3 && now - myRace.lastSend > 3500) { myRace.resends++; fireRP(); }
+}
+setInterval(raceTick, 250);
+
+// ---- rendering (race screen) ----
+let lastRaceHtml = '';
+function renderRace() {
+  if (!currentRole || modeOf() !== 'race') return;
+  const host = currentRole === 'host';
+  const scene = document.getElementById('raceHostScene');
+  scene.classList.toggle('hidden', !host);
+  document.getElementById('raceSub').innerText = host ? `Host - ${Object.keys(raceH.players).length} / ${RACE_CAP} ducks` : `Player - ${myName}`;
+  if (host) sceneUpdate(scene);
+  const ae = document.activeElement;
+  if (host && ae && ae.id === 'racePctInput') return;
+  const html = host ? raceHostHTML() : racePlayerHTML();
+  if (html !== lastRaceHtml) { document.getElementById('raceBody').innerHTML = html; lastRaceHtml = html; }
+  raceTick();
+}
+function rulesLine(n, need, pct) {
+  return `<div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-sm text-slate-300 space-y-1.5 text-left">
+    <div>🦆 Answer questions as fast as you can. Every answer instantly gives you a new random question - you never wait for anyone.</div>
+    <div>🏁 Get <b class="text-amber-300">${need} correct</b> (${pct}% of ${n}) to cross the finish line. First duck across wins!</div>
+    <div>❌ Make too many mistakes and you can no longer reach ${need} - you are <b class="text-rose-300">disqualified</b>.</div></div>`;
+}
+function racePlayerHTML() {
+  const r = gameState.race || {}, ph = r.phase || 'idle', ids = r.ids || [], n = r.n || raceQs.length, need = r.need || 1, pct = r.pct || 60;
+  const joined = ids.includes(myPid);
+  const card = (t, s) => `<div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-2"><div class="text-xl font-black text-white">${t}</div><div class="text-sm text-slate-400">${s}</div></div>`;
+  if (!joined && ids.length >= RACE_CAP) return card('Race is full', `The race already has ${RACE_CAP} players. Please wait for the next game.`);
+  if (ph === 'idle') return `<div class="space-y-4">${card(`You're in, ${escAttr(myName)}! 🦆`, `Waiting for the host to start the race... ${r.players || 0} duck(s) on the water.`)}${rulesLine(n, need, pct)}</div>`;
+  if (!joined) return card('Race in progress', 'This race already started. Please wait for the next one.');
+  if (ph === 'countdown' || (ph === 'running' && !myRace.started)) {
+    return `<div class="space-y-4">${card('Get ready! 🦆', myRace.qs ? 'The race is about to start...' : 'Loading questions...')}${rulesLine(n, need, pct)}</div>`;
+  }
+  // header + track
+  const frac = Math.min(1, myRace.c / Math.max(1, need));
+  const missesLeft = Math.max(0, (n - need) - myRace.w);
+  const head = `<div class="rounded-2xl bg-sky-900/40 border border-sky-700/40 p-3 mb-4">
+    <div class="flex items-center justify-between text-xs"><span class="font-bold text-white">${escAttr(myName)}</span><span id="raceClock" class="font-black text-sky-200">00:00</span></div>
+    <div class="relative h-10 mt-2 rounded-full bg-sky-950/70 overflow-hidden border border-sky-700/40">
+      <div class="absolute inset-y-0 left-0 bg-sky-500/30" style="width:${(frac * 82 + 3).toFixed(1)}%"></div>
+      <div class="absolute top-1/2 ${myRace.flash === 'ok' ? 'ds-hop' : ''}" style="left:${(2 + frac * 78).toFixed(1)}%;width:38px;height:28px;margin-top:-14px">${duckSVG(DUCK_COLORS[(Object.keys(r.ids || []).length ? (ids.indexOf(myPid) % DUCK_COLORS.length) : 0)])}</div>
+      <div class="absolute right-2 top-1/2 -translate-y-1/2 text-lg">🏁</div></div>
+    <div class="flex justify-between text-xs mt-2"><span class="text-emerald-300 font-bold">${myRace.c} / ${need} correct to finish</span><span class="${missesLeft <= 2 ? 'text-rose-300' : 'text-slate-400'} font-semibold">${missesLeft} miss${missesLeft === 1 ? '' : 'es'} left</span></div></div>`;
+  // end states
+  if (!myRace.locked && (myRace.st !== 'run' || ph === 'final')) {
+    const place = (r.fin || []).indexOf(myPid) + 1, secs = fmtMs((myRace.endAt || Date.now()) - myRace.t0);
+    let box;
+    if (myRace.st === 'fin') box = `<div class="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-center space-y-1"><div class="text-4xl">${place ? medal(place) : '🏁'}</div><div class="text-2xl font-black text-amber-300">You crossed the finish line!</div><div class="text-sm text-slate-300">${place ? 'You placed #' + place : 'Confirming your place...'} - time ${secs} - ${myRace.c}/${myRace.n} correct</div></div>`;
+    else box = `<div class="p-6 rounded-2xl bg-rose-950/50 border border-rose-800 text-center space-y-1"><div class="text-4xl">🚫</div><div class="text-2xl font-black text-rose-300">Disqualified</div><div class="text-sm text-slate-300">${myRace.st === 'dq' ? `You needed ${need} correct answers (${pct}%) but only got ${myRace.c}.` : 'The race ended before you reached the finish line.'}</div></div>`;
+    let rank = '';
+    if (ph === 'final' && r.top) rank = `<div class="mt-4 space-y-2"><div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Final ranking</div>${r.top.map(t => `<div class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm"><span class="font-bold ${t[1] ? 'text-slate-100' : 'text-slate-500'}">${t[1] ? medal(t[1]) : '🚫'} ${escAttr(t[0])}</span><span class="text-xs text-slate-400">${t[1] ? fmtMs(t[3] * 1000) : 'DQ'}</span></div>`).join('')}</div>`;
+    else rank = '<div class="mt-3 text-center text-xs text-slate-500">Waiting for the other ducks to finish...</div>';
+    return head + box + rank;
+  }
+  // question
+  const q = curQ();
+  if (!q) return head + card('Loading...', 'Fetching your next question.');
+  const total = q.t;
+  const qn = myRace.locked ? myRace.a : myRace.a + 1;
+  const msg = myRace.flash === 'ok' ? '<span class="text-emerald-300">Correct! Your duck swims ahead 🦆</span>' : myRace.flash === 'bad' ? '<span class="text-rose-300">Not quite - on to the next one!</span>' : myRace.flash === 'time' ? "<span class=\"text-rose-300\">Time's up - next question!</span>" : '';
+  return `${head}<div class="space-y-4">
+    <div class="flex items-center justify-between text-xs text-slate-400"><span>Question ${qn} of ${n}</span><span id="raceSecs" class="font-bold text-amber-400">${total}s</span></div>
+    <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div id="raceBar" class="h-full bg-amber-500" style="width:100%"></div></div>
+    <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-lg font-bold text-white">${escAttr(q.p)}</div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${q.c.map((c, i) => {
+      let cls = 'border-slate-700 bg-slate-900 hover:border-cyan-500/60';
+      if (myRace.locked) cls = i === q.a ? 'border-emerald-400 bg-emerald-500/20' : i === myRace.picked ? 'border-rose-400 bg-rose-500/20' : 'border-slate-800 bg-slate-900 opacity-50';
+      return `<button onclick="raceChoose(${i})" ${myRace.locked ? 'disabled' : ''} class="text-left p-4 rounded-2xl border-2 text-sm font-semibold text-white transition ${cls}"><span class="text-amber-400 font-black mr-2">${'ABCD'[i]}</span>${escAttr(c)}</button>`;
+    }).join('')}</div>
+    <div class="text-center text-sm font-semibold h-5">${msg}</div></div>`;
+}
+
+// ---- ranking list (host screen + TV) ----
+function rankRowsHTML(limit, big) {
+  const rk = raceRanked(), need = raceH.phase === 'idle' ? raceNeed(raceQs.length, racePct) : raceH.need;
+  const pad = big ? 'px-3 py-2.5 text-base' : 'px-3 py-2 text-sm';
+  return rk.slice(0, limit).map((p, i) => {
+    const lead = p.st === 'fin' && p.place === 1;
+    const right = p.st === 'fin' ? `<span class="text-xs text-slate-400">${fmtMs(p.t)}</span>` : p.st === 'dq' ? '<span class="text-xs font-bold text-rose-400">DQ</span>' : `<span class="text-xs font-bold text-sky-300">${p.c}/${need}</span>`;
+    const lead2 = p.st === 'fin' ? medal(p.place) : p.st === 'dq' ? '🚫' : (i + 1);
+    return `<div class="flex items-center justify-between gap-3 ${pad} rounded-xl ${lead ? 'bg-amber-500/10 border border-amber-500/40' : 'bg-slate-900/80 border border-slate-800'} ${p.st === 'dq' ? 'opacity-60' : ''}"><span class="font-bold truncate ${lead ? 'text-amber-300' : 'text-slate-100'}"><span class="inline-block w-8 text-slate-400">${lead2}</span>${escAttr(p.name)}</span>${right}</div>`;
+  }).join('');
+}
+function raceHostHTML() {
+  const ph = raceH.phase, ids = Object.keys(raceH.players), np = ids.length, nq = raceQs.length;
+  const n = ph === 'idle' ? nq : raceH.n, need = ph === 'idle' ? raceNeed(nq, racePct) : raceH.need;
+  const cnt = { fin: 0, dq: 0, run: 0 };
+  Object.values(raceH.players).forEach(p => cnt[p.st === 'fin' ? 'fin' : p.st === 'dq' ? 'dq' : 'run']++);
+  const btn = (label, fn, cls, dis) => `<button onclick="${fn}" ${dis ? 'disabled' : ''} class="px-5 py-2.5 rounded-xl text-sm font-bold ${cls} ${dis ? 'opacity-40 cursor-not-allowed' : ''}">${label}</button>`;
+  const amber = 'bg-amber-500 hover:bg-amber-400 text-slate-950', gray = 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700';
+  let main, actions = '';
+  if (ph === 'idle') {
+    const chips = ids.map(id => `<span class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-200">${escAttr(raceH.players[id].name)}</span>`).join('');
+    main = `<div class="space-y-4"><div class="text-lg font-black text-white">Lobby</div>
+      <div class="text-sm text-slate-400">${np} duck${np === 1 ? '' : 's'} joined (max ${RACE_CAP}). ${nq} question${nq === 1 ? '' : 's'} in the deck.</div>
+      <div class="flex flex-wrap items-center gap-3 p-3 rounded-2xl bg-slate-900 border border-slate-800">
+        <label class="text-xs font-semibold text-slate-300">Correct answers needed to cross the finish line</label>
+        <input id="racePctInput" type="number" min="10" max="100" value="${racePct}" onchange="raceSetPct(this.value)" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500"><span class="text-xs text-slate-400">%</span>
+        <span class="text-xs font-bold text-amber-300">= ${need} of ${nq} questions</span></div>
+      <div class="flex flex-wrap gap-2">${chips || '<span class="text-xs text-slate-500">Waiting for players to join...</span>'}</div></div>`;
+    actions = btn('Start Race', 'raceStart()', amber, !np || nq < 2);
+  } else if (ph === 'final') {
+    const w = raceRanked()[0], won = w && w.st === 'fin';
+    main = `<div class="p-8 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center space-y-2"><div class="text-sm text-amber-300 font-bold uppercase tracking-wider">Race finished</div><div class="text-3xl font-black text-white">${won ? '🥇 ' + escAttr(w.name) : 'No winner'}</div><div class="text-sm text-slate-300">${won ? fmtMs(w.t) + ' - ' + w.c + '/' + n + ' correct' : 'Nobody reached ' + need + ' correct answers.'}</div></div>`;
+    actions = btn('New Race', 'raceReset()', amber);
+  } else {
+    main = `<div class="grid grid-cols-3 gap-3 text-center"><div class="p-3 rounded-2xl bg-slate-900 border border-slate-800"><div class="text-2xl font-black text-sky-300">${cnt.run}</div><div class="text-xs text-slate-400">racing</div></div><div class="p-3 rounded-2xl bg-slate-900 border border-slate-800"><div class="text-2xl font-black text-emerald-300">${cnt.fin}</div><div class="text-xs text-slate-400">finished</div></div><div class="p-3 rounded-2xl bg-slate-900 border border-slate-800"><div class="text-2xl font-black text-rose-300">${cnt.dq}</div><div class="text-xs text-slate-400">disqualified</div></div></div>
+      <div class="text-xs text-slate-400">Finish line: ${need} correct answers out of ${n} questions.</div>`;
+    actions = ph === 'running' ? btn('End Race Now', 'raceFinish()', gray) : '';
+  }
+  if (ph !== 'idle' && ph !== 'final' && ph !== 'running') actions += btn('Cancel', 'raceReset()', gray);
+  if (ph === 'running') actions += btn('Reset', 'raceReset()', gray);
+  const list = ph === 'idle' ? '' : `<div class="space-y-2"><div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ranking</div>${rankRowsHTML(12, false)}</div>`;
+  return `<div class="space-y-5">${main}<div class="flex flex-wrap items-center gap-2">${actions}</div>${list}</div>`;
+}
+
+// ---- race question editor ----
+function openRaceEditor() {
+  if (currentRole !== 'host' || raceH.phase === 'running' || raceH.phase === 'countdown') return;
+  buildRaceEditor(raceQs);
+  document.getElementById('raceEditorModal').classList.remove('hidden');
+}
+function closeRaceEditor() { document.getElementById('raceEditorModal').classList.add('hidden'); }
+function buildRaceEditor(list) {
+  const inp = 'w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500';
+  document.getElementById('raceEditorList').innerHTML = list.map((q, i) => `
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start border border-slate-800 rounded-2xl p-3 bg-slate-950/50">
+      <div class="lg:col-span-1 flex lg:flex-col items-center gap-2"><span class="text-amber-400 font-black text-sm">#${i + 1}</span><button onclick="delRaceRow(${i})" class="text-[11px] text-rose-400 hover:text-rose-300">Delete</button></div>
+      <div class="lg:col-span-5"><textarea id="rq_p_${i}" rows="4" class="${inp}">${escAttr(q.prompt)}</textarea><div class="flex items-center gap-2 mt-2"><input id="rq_t_${i}" type="number" min="5" max="120" value="${q.timer || 20}" class="${inp} w-20"><span class="text-xs text-slate-500">sec per question</span></div></div>
+      <div class="lg:col-span-6 space-y-1.5">${[0, 1, 2, 3].map(j => `<label class="flex items-center gap-2"><input type="radio" name="rq_ok_${i}" value="${j}" ${(q.correct || 0) === j ? 'checked' : ''} class="accent-amber-500"><span class="text-xs text-slate-500 w-3">${'ABCD'[j]}</span><input id="rq_c_${i}_${j}" value="${escAttr((q.choices || [])[j])}" class="${inp}"></label>`).join('')}</div>
+    </div>`).join('');
+}
+function readRaceEditor() {
+  const out = [], count = document.querySelectorAll('[id^="rq_p_"]').length;
+  for (let i = 0; i < count; i++) {
+    const vals = [0, 1, 2, 3].map(j => document.getElementById(`rq_c_${i}_${j}`).value.trim());
+    let last = 3; while (last >= 0 && !vals[last]) last--;
+    const choices = vals.slice(0, Math.max(last + 1, 2)).map((t, j) => t || 'Choice ' + 'ABCD'[j]);
+    const sel = document.querySelector(`input[name="rq_ok_${i}"]:checked`);
+    const prompt = document.getElementById(`rq_p_${i}`).value.trim();
+    out.push({ prompt, choices, correct: Math.min(sel ? parseInt(sel.value) : 0, choices.length - 1),
+      timer: Math.max(5, Math.min(120, parseInt(document.getElementById(`rq_t_${i}`).value) || 20)), _ok: !!prompt && vals.filter(Boolean).length >= 2 });
+  }
+  return out;
+}
+function addRaceRow() { const l = readRaceEditor(); if (l.length >= 30) return; l.push({ prompt: '', choices: ['', '', '', ''], correct: 0, timer: 20 }); buildRaceEditor(l); }
+function delRaceRow(i) { const l = readRaceEditor(); l.splice(i, 1); buildRaceEditor(l); }
+function saveRaceEditor() {
+  const l = readRaceEditor().filter(q => q._ok).slice(0, 30).map(({ prompt, choices, correct, timer }) => ({ prompt, choices, correct, timer }));
+  if (!l.length) return;
+  raceQs = l;
+  try { localStorage.setItem('gogo_race_questions', JSON.stringify(l)); } catch (e) {}
+  if (raceH.phase === 'final') raceReset(); else broadcastState();
+  closeRaceEditor();
+}
+
+/* ================= DUCK SCENE (shared by host screen + TV) ================= */
+function sceneEnsure(el) {
+  if (el._scene) return el._scene;
+  el.classList.add('duck-scene');
+  el.innerHTML = `<div class="ds-grass"></div><div class="ds-waves"></div><div class="ds-cloud" style="top:26%;left:12%;width:150px"></div><div class="ds-cloud" style="top:62%;left:48%;width:200px;animation-delay:-20s"></div>
+    <div class="ds-finish"><span>FINISH</span></div>
+    <div class="ds-pill ds-clockpill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="ds-clock">00:00</span></div>
+    <div class="ds-pill ds-needpill"></div><div class="ds-cd hidden"></div><div class="ds-ducks"></div>`;
+  el._scene = { ducks: {}, layer: el.querySelector('.ds-ducks'), need: el.querySelector('.ds-needpill') };
+  return el._scene;
+}
+function sceneUpdate(el) {
+  const S = sceneEnsure(el), W = el.clientWidth || 800, H = el.clientHeight || 360;
+  const ids = Object.keys(raceH.players), N = Math.max(1, ids.length);
+  const need = raceH.phase === 'idle' ? raceNeed(raceQs.length, racePct) : raceH.need, n = raceH.phase === 'idle' ? raceQs.length : raceH.n;
+  S.need.innerText = `🏁 ${need} of ${n} correct to finish`;
+  const top0 = H * 0.2, laneH = (H * 0.97 - top0) / N;
+  const dh = Math.max(30, Math.min(78, laneH * 1.8)), dw = dh * 1.38;
+  const finishX = W * 0.86, startX = W * 0.02;
+  const ranked = raceRanked(), topSet = new Set(ranked.filter(p => p.st !== 'dq').slice(0, 5).map(p => p.pid));
+  Object.keys(S.ducks).forEach(id => { if (!raceH.players[id]) { S.ducks[id].remove(); delete S.ducks[id]; } });
+  ids.forEach((id, i) => {
+    const p = raceH.players[id];
+    let d = S.ducks[id];
+    if (!d) {
+      d = document.createElement('div'); d.className = 'ds-duck';
+      d.innerHTML = `<div class="ds-tag"></div><div class="ds-bob" style="animation-delay:${(-Math.random() * 2).toFixed(2)}s">${duckSVG(DUCK_COLORS[(p.ci || i) % DUCK_COLORS.length])}</div>`;
+      S.layer.appendChild(d); S.ducks[id] = d;
+    }
+    const frac = Math.min(1, p.c / Math.max(1, need));
+    let x = startX + frac * (finishX - dw - startX);
+    if (p.st === 'fin') x = Math.min(W - dw - 6, finishX + 10 + ((p.place - 1) % 3) * dw * 0.3);
+    d.style.width = dw + 'px'; d.style.height = dh + 'px';
+    d.style.left = x + 'px'; d.style.top = (top0 + (i + 0.5) * laneH - dh * 0.6) + 'px';
+    d.style.zIndex = 10 + i; d.style.setProperty('--fs', Math.max(9, Math.min(16, dh * 0.22)) + 'px');
+    d.classList.toggle('dq', p.st === 'dq'); d.classList.toggle('fin', p.st === 'fin');
+    const tag = d.firstChild;
+    tag.innerText = (p.st === 'fin' ? medal(p.place) + ' ' : p.st === 'dq' ? '✖ ' : (p.st === 'run' && topSet.has(id) && p.c > 0 && ranked[0].pid === id ? '👑 ' : '')) + p.name;
+    tag.style.display = (N <= 24 || topSet.has(id) || p.st === 'fin') ? '' : 'none';
+  });
+}
+window.addEventListener('resize', () => { if (modeOf() === 'race') { renderTV(); const s = document.getElementById('raceHostScene'); if (s && currentRole === 'host') sceneUpdate(s); } });
+
+/* ================= TV MODE ================= */
+function toggleTV(on) {
+  if (currentRole !== 'host') return;
+  tvOpen = on === undefined ? !tvOpen : on;
+  document.getElementById('tvOverlay').classList.toggle('hidden', !tvOpen);
+  renderTV();
+}
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && tvOpen) toggleTV(false); });
+
+let lastTvRank = '', lastTvFinal = '';
+function renderTV() {
+  if (!tvOpen) return;
+  const el = document.getElementById('tvBody');
+  if (modeOf() === 'race') {
+    if (el.dataset.mode !== 'race') {
+      el.dataset.mode = 'race'; el.className = 'w-full h-full'; lastTvRank = ''; lastTvFinal = '';
+      el.innerHTML = `<div class="flex h-full"><div id="tvScene" class="flex-1 h-full relative"></div><aside class="w-72 xl:w-80 shrink-0 h-full bg-slate-950 border-l border-slate-800 p-4 pt-16 overflow-y-auto"><div class="text-sm font-black text-sky-300 uppercase tracking-widest mb-1">Duck Race</div><div id="tvRankSub" class="text-xs text-slate-400 mb-3"></div><div id="tvRank" class="space-y-2"></div></aside></div>`;
+    }
+    const scene = document.getElementById('tvScene');
+    sceneUpdate(scene);
+    const ph = raceH.phase, rk = raceRanked();
+    document.getElementById('tvRankSub').innerText = ph === 'idle' ? `Waiting for ducks - ${rk.length} joined` : ph === 'final' ? 'Final ranking' : ph === 'countdown' ? 'Get ready...' : `${rk.filter(p => p.st === 'fin').length} finished - ${rk.filter(p => p.st === 'dq').length} DQ`;
+    const rows = rk.length ? rankRowsHTML(14, true) : '<div class="text-sm text-slate-500">Ducks will appear here as players join...</div>';
+    if (rows !== lastTvRank) { document.getElementById('tvRank').innerHTML = rows; lastTvRank = rows; }
+    let fin = document.getElementById('tvFinal');
+    if (!fin) { fin = document.createElement('div'); fin.id = 'tvFinal'; fin.className = 'ds-final hidden'; scene.appendChild(fin); }
+    if (ph === 'final') {
+      const w = rk[0], won = w && w.st === 'fin';
+      const html = `<div class="text-sm font-bold text-amber-300 uppercase tracking-widest">Race finished</div><div class="text-5xl font-black text-white mt-1">${won ? '🥇 ' + escAttr(w.name) : 'No winner'}</div><div class="text-base text-slate-300 mt-1 mb-4">${won ? 'Time ' + fmtMs(w.t) + ' - ' + w.c + '/' + raceH.n + ' correct' : 'Nobody reached ' + raceH.need + ' correct answers'}</div><div class="grid gap-2 text-left" style="grid-template-columns:repeat(${rk.length > 8 ? 2 : 1},minmax(0,1fr))">${rankRowsHTML(16, true)}</div>`;
+      if (html !== lastTvFinal) { fin.innerHTML = html; lastTvFinal = html; }
+      fin.classList.remove('hidden');
+    } else { fin.classList.add('hidden'); lastTvFinal = ''; }
+    raceTick();
+  } else {
+    if (el.dataset.mode !== 'jeo') { el.dataset.mode = 'jeo'; el.className = 'max-w-6xl mx-auto p-6 md:p-10'; }
+    const sc = gameState.scores, seats = gameState.seats || {};
+    const lead = sc.group1 === sc.group2 ? 'tie' : sc.group1 > sc.group2 ? 'group1' : 'group2';
+    const card = (g, label, tc) => `<div class="p-8 rounded-3xl text-center border-2 ${lead === g ? 'border-amber-400 bg-amber-500/10' : 'border-slate-800 bg-slate-900/70'}">
+      <div class="text-2xl font-bold ${tc}">${label}${seats[g] ? ' - ' + escAttr(seats[g].name) : ''}</div>
+      <div class="text-7xl font-black text-white mt-4">${sc[g]}</div><div class="text-lg text-slate-400 mt-1">points</div>
+      <div class="text-sm font-bold text-amber-400 mt-3 h-5">${lead === g ? 'LEADING' : ''}</div></div>`;
+    el.innerHTML = `<div class="text-center mb-8"><div class="text-sm font-bold text-amber-400 uppercase tracking-widest">Jeopardy</div><div class="text-5xl font-black text-white mt-2">Scoreboard</div>${lead === 'tie' ? '<div class="text-lg text-slate-400 mt-2">Tied game!</div>' : ''}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-6">${card('group1', 'Group 1', 'text-cyan-400')}${card('group2', 'Group 2', 'text-emerald-400')}</div>`;
+  }
+}
+
+    // Helpers
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    window.onload = function() {
+      loadStateFromLocalStorage();
+      // Start every session clean: keep scores/answered tiles, but never resume a half-open question
+      Object.assign(gameState, { activeTile: null, goSignal: false, buzzedTeam: null, pickPhase: false, pickTeam: null, banner: null, timerRunning: false });
+      relayConnect();
+      cleanExpiredSessions();
+      applyViews();
+      updateLoginBadges();
+
+      // Show login modal by default
+      document.getElementById('loginModal').classList.remove('hidden');
+      renderBoard();
+      updateMainBoardStatus();
+    };
+  </script>
+  <script>
+/* ================= ARTILLERY (lives inside the same site) ================= */
+(function () {
+  const W = 1000, H = 500, G = 300, VMAX = 580, CR = 32, HP0 = 5, CAP = 30;
+  const FI = { ki: 'Ki', oscar: 'Oscar', aina: 'Aina', tene: 'Tene' }, IDS = Object.keys(FI);
+  const COL = { A: '#22c55e', B: '#d946ef' };
+  const IMG = {};
+  IDS.forEach(i => {
+    const cap = i[0].toUpperCase() + i.slice(1);
+    const tries = ['assets/' + i + '.jpg', 'assets/' + cap + '.jpg', 'assets/' + cap + '.png', 'assets/' + i + '.png'];
+    let k = 0; const im = new Image();
+    im.onerror = () => { k++; if (k < tries.length) im.src = tries[k]; };
+    im.onload = () => { if (S) render(); };
+    im.src = tries[0]; IMG[i] = im;
+  });
+  const imgOK = im => im.complete && im.naturalWidth > 0;
+  const $ = id => document.getElementById(id);
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const isHost = () => currentRole === 'host';
+
+  let S = null, roster = {}, Ht = null, anim = null, pend = null, lastShot = 0;
+  let clouds = [], parts = [], shakeT = 0, lastT = 0, fired = false, dragging = false, dragPt = null, ang = 45, pow = 60, corr = 0, usedQ = [], tAns = null, acked = false, full = false;
+  let myT = sessionStorage.getItem('gga_t') || null;
+
+  const fresh = () => ({
+    seed: fairSeed(), craters: [],
+    hp: { ki: HP0, oscar: HP0, aina: HP0, tene: HP0 },
+    team: { ki: 'A', oscar: 'A', aina: 'B', tene: 'B' },
+    buzzer: { A: null, B: null }, cnt: { A: 0, B: 0 },
+    phase: 'setup', q: null, locked: { A: 0, B: 0 }, buzzed: null, shooter: null,
+    wind: 0, shot: null, winner: null, msg: 'Host: pick 2 fighters for each team, then start the battle.', rev: 0
+  });
+  const count = t => Object.values(roster).filter(p => p[1] === t).length;
+
+  /* ---------- terrain & physics ---------- */
+  function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function carve(h, c) {
+    const cx = c[0], cy = c[1];
+    for (let x = Math.max(0, Math.floor(cx - CR)); x <= Math.min(W, Math.ceil(cx + CR)); x++) {
+      const d = Math.sqrt(Math.max(0, CR * CR - (x - cx) ** 2));
+      if (h[x] > cy - d) h[x] = Math.max(25, cy - d);
+    }
+  }
+  function terrain(seed, cr) {
+    const r = rng(seed), h = new Float32Array(W + 1), base = 170 + r() * 70;
+    const waves = [0, 1, 2].map(i => ({ a: (90 - i * 30) * (.5 + r()), f: (1.1 + r() * 1.8 + i) * 2 * Math.PI / W, p: r() * 6.28 }));
+    for (let x = 0; x <= W; x++) {
+      let v = base; waves.forEach(w => v += w.a * Math.sin(w.f * x + w.p));
+      const e = Math.min(1, Math.min(x, W - x) / 140), sm = e * e * (3 - 2 * e);
+      h[x] = clamp(base + (v - base) * sm, 60, 360);
+    }
+    cr.forEach(c => carve(h, c));
+    return h;
+  }
+  // Try 80 random maps and keep the fairest: similar tower heights, similar fighter heights,
+  // gentle slopes under towers/fighters, and no wall far taller than the towers.
+  function fairSeed() {
+    let best = Math.floor(Math.random() * 1e9), bs = 1e9;
+    for (let k = 0; k < 80; k++) {
+      const sd = Math.floor(Math.random() * 1e9), h = terrain(sd, []);
+      const avg = xs => xs.reduce((s, x) => s + h[x], 0) / xs.length;
+      const slope = x => Math.abs(h[Math.min(W, x + 18)] - h[Math.max(0, x - 18)]);
+      let mx = 0; for (let x = 150; x <= 850; x += 5) mx = Math.max(mx, h[x]);
+      const top = Math.max(h[40], h[960]);
+      const sc = Math.abs(h[40] - h[960]) + 1.2 * Math.abs(avg([190, 340]) - avg([810, 660])) +
+        [40, 190, 340, 660, 810, 960].reduce((s, x) => s + Math.max(0, slope(x) - 40), 0) + Math.max(0, mx - (top + 140)) * 2;
+      if (sc < bs) { bs = sc; best = sd; }
+    }
+    return best;
+  }
+  function fx(i) { const m = IDS.filter(k => S.team[k] === S.team[i]); return S.team[i] === 'A' ? [190, 340][m.indexOf(i)] : [810, 660][m.indexOf(i)]; }
+  const fy = i => Ht[Math.round(fx(i))] + 26;
+  // Physics: every 1/60 s -> wind pushes sideways, gravity pulls down, then move.
+  function trace(s) {
+    const d = s.t === 'A' ? 1 : -1, a = s.a * Math.PI / 180, tx = d > 0 ? 40 : 960, v = s.p / 100 * VMAX;
+    let x = tx + d * Math.cos(a) * 34, y = Ht[tx] + 40 + Math.sin(a) * 34, vx = d * v * Math.cos(a), vy = v * Math.sin(a);
+    const pts = [[x, y]], dt = 1 / 60, foes = IDS.filter(i => S.team[i] !== s.t && S.hp[i] > 0);
+    for (let k = 0; k < 1500; k++) {
+      vx += s.w * dt; vy -= G * dt; x += vx * dt; y += vy * dt; pts.push([x, y]);
+      if (x < -80 || x > W + 80 || y < -100) return { pts, off: 1 };
+      if ((x >= 0 && x <= W && y <= Ht[clamp(Math.round(x), 0, W)]) || foes.some(i => Math.hypot(x - fx(i), y - fy(i)) < 28)) break;
+    }
+    const ix = pts[pts.length - 1][0], iy = pts[pts.length - 1][1];
+    let hit = null, best = 52;
+    foes.forEach(i => { const q = Math.hypot(ix - fx(i), iy - fy(i)); if (q < best) { best = q; hit = i; } });
+    return { pts, ix, iy, hit };
+  }
+
+  /* ---------- host logic ---------- */
+  function push() {
+    S.cnt = { A: count('A'), B: count('B') };
+    S.bn = { A: S.buzzer.A && roster[S.buzzer.A] ? roster[S.buzzer.A][0] : '', B: S.buzzer.B && roster[S.buzzer.B] ? roster[S.buzzer.B][0] : '' };
+    S.rev = Math.max(Date.now(), S.rev + 1);
+    try { localStorage.setItem('gogo_art', JSON.stringify({ S, roster })); } catch (e) {}
+    sendMsg({ type: 'ART_S', s: S });
+    showState(S);
+  }
+  const canBuzzH = id => { const p = roster[id]; return p && S.buzzer[p[1]] === id; };   // only the chosen buzzer
+  function ensure(m) {
+    if (!roster[m.pid] && (m.t === 'A' || m.t === 'B') && count(m.t) < CAP) roster[m.pid] = [String(m.n || 'Player').slice(0, 12), m.t];
+    return roster[m.pid];
+  }
+  function ask() {
+    if (!S.buzzer.A || !S.buzzer.B) { S.msg = 'Both teams need a buzzer first (players tap "I\'ll be the buzzer", or you tap a name).'; return push(); }
+    const qs = raceQs.filter(q => q && q.choices && q.choices.length > 1);
+    if (!qs.length) { S.msg = 'No questions yet - press Edit Questions.'; return push(); }
+    let n = qs.map((_, i) => i).filter(i => !usedQ.includes(i));
+    if (!n.length) { usedQ = []; n = qs.map((_, i) => i); }
+    const i = n[Math.floor(Math.random() * n.length)]; usedQ.push(i);
+    const q = qs[i]; corr = q.correct || 0;
+    Object.assign(S, { q: { prompt: q.prompt, choices: q.choices }, locked: { A: 0, B: 0 }, buzzed: null, phase: 'ask', shooter: null, msg: 'Get ready to buzz...' });
+    push();
+    setTimeout(() => { if (S.phase === 'ask') { S.phase = 'open'; S.msg = 'BUZZ NOW!'; push(); } }, 1500);
+  }
+  function hBuzz(id) {
+    const p = roster[id];
+    if (S.phase !== 'open' || !p || S.locked[p[1]] || !canBuzzH(id)) return;
+    S.buzzed = p[1]; S.phase = 'answer';
+    S.msg = p[0] + ' (Team ' + p[1] + ') buzzed first! Answer within 20 seconds.';
+    clearTimeout(tAns); tAns = setTimeout(() => { if (S.phase === 'answer') grade(false); }, 20000);
+    push();
+  }
+  function grade(ok) {
+    clearTimeout(tAns); const t = S.buzzed;
+    if (ok) {
+      const m = Object.entries(roster).filter(([k, p]) => p[1] === t);
+      const pk = m.length ? m[Math.floor(Math.random() * m.length)] : null;   // random shooter from the winning team
+      S.shooter = { t, pid: pk ? pk[0] : null, name: pk ? pk[1][0] : 'Host' };
+      S.wind = Math.round((Math.random() * 2 - 1) * 600) / 10;               // new wind every shot (-60..60)
+      S.phase = 'aim'; S.msg = 'Correct! ' + S.shooter.name + ' (Team ' + t + ') was randomly picked to shoot!';
+    } else {
+      S.locked[t] = 1; S.buzzed = null;
+      if (S.locked.A && S.locked.B) { S.phase = 'idle'; S.msg = 'Both teams missed. No shot this round.'; }
+      else { S.phase = 'open'; S.msg = 'Wrong! Team ' + (t === 'A' ? 'B' : 'A') + ' can steal - BUZZ!'; }
+    }
+    push();
+  }
+  function hFire(a, p) {
+    if (S.phase !== 'aim') return;
+    const sh = { id: Date.now(), t: S.shooter.t, a: clamp(a, 5, 85), p: clamp(p, 10, 100), w: S.wind };
+    S.shot = sh; S.phase = 'fly'; S.msg = 'Incoming...'; push();
+    const r = trace(sh);
+    setTimeout(() => {
+      if (!r.off) { S.craters.push([Math.round(r.ix), Math.round(r.iy)]); if (r.hit) S.hp[r.hit]--; }
+      S.msg = r.hit ? 'Direct hit on ' + FI[r.hit] + '! (' + S.hp[r.hit] + ' HP left)' : 'Missed!';
+      const dead = t => IDS.filter(i => S.team[i] === t).every(i => S.hp[i] <= 0);
+      if (dead('A') || dead('B')) { S.winner = dead('B') ? 'A' : 'B'; S.phase = 'over'; S.msg = 'Team ' + S.winner + ' wins!'; }
+      else S.phase = 'idle';
+      S.shot = null; push();
+    }, r.pts.length * 8 + 1000);
+  }
+  function newGame() { const b = S.buzzer, t = S.team; S = Object.assign(fresh(), { buzzer: b, team: t }); usedQ = []; push(); }
+
+  /* ---------- messages ---------- */
+  window.artInit = function () {   // called when the host opens Artillery
+    if (!isHost()) return;
+    let keep = null;
+    if (S) keep = { team: S.team, buzzer: S.buzzer };
+    else { try { const o = JSON.parse(localStorage.getItem('gogo_art')); if (o && o.S) { roster = o.roster || {}; keep = { team: o.S.team, buzzer: o.S.buzzer }; } } catch (e) {} }
+    S = fresh(); if (keep) { S.team = keep.team; S.buzzer = keep.buzzer; }
+    usedQ = []; anim = null; pend = null;
+    push();
+  };
+  window.artPush = function () { if (isHost() && S) push(); };
+  window.artMsg = function (m, host) {
+    if (!host) {
+      if (m.type === 'ART_S') showState(m.s);
+      else if (m.type === 'ART_ACK' && m.pid === myPid) { acked = !!m.ok; full = !m.ok; if (!m.ok) { myT = null; sessionStorage.removeItem('gga_t'); } render(); }
+      return;
+    }
+    if (!S) return;
+    if (m.type === 'ART_JOIN') {
+      const cur = roster[m.pid], c = Object.entries(roster).filter(([k, p]) => p[1] === m.t && k !== m.pid).length;
+      const ok = (m.t === 'A' || m.t === 'B') && c < CAP;
+      if (ok) roster[m.pid] = [String(m.n || 'Player').slice(0, 12), m.t];
+      sendMsg({ type: 'ART_ACK', pid: m.pid, ok });
+      if (ok) push();
+    }
+    else if (m.type === 'ART_CLAIM') { const p = ensure(m); if (p && !S.buzzer[p[1]]) { S.buzzer[p[1]] = m.pid; push(); } }
+    else if (m.type === 'ART_UNCLAIM') { const p = roster[m.pid]; if (p && S.buzzer[p[1]] === m.pid && ['setup', 'idle', 'over'].includes(S.phase)) { S.buzzer[p[1]] = null; push(); } }
+    else if (m.type === 'ART_BUZZ') { if (ensure(m)) hBuzz(m.pid); }
+    else if (m.type === 'ART_ANS') { const p = ensure(m); if (S.phase === 'answer' && p && p[1] === S.buzzed && canBuzzH(m.pid)) grade(m.i === corr); }
+    else if (m.type === 'ART_FIRE') { if (S.shooter && S.shooter.pid === m.pid) hFire(m.a, m.p); }
+  };
+
+  /* ---------- show state & animate ---------- */
+  function showState(s) {
+    if (!isHost() && S && s.rev < S.rev) return;
+    if (anim && !isHost()) { pend = s; return; }
+    S = s; fired = false; Ht = terrain(S.seed, S.craters);
+    if (!clouds.length || clouds.seed !== S.seed) { const r = rng(S.seed + 7); clouds = Array.from({ length: 6 }, () => ({ x: r() * (W + 300), y: 40 + r() * 150, s: .7 + r() * .8 })); clouds.seed = S.seed; }
+    if (S.shot && S.shot.id !== lastShot) { lastShot = S.shot.id; anim = { r: trace(S.shot), k: 0, t0: 0, sh: S.shot, fireT: performance.now() }; muzzleSmoke(S.shot.t, S.shot.a); }
+    render();
+  }
+  function endAnim() {
+    if (!anim.r.off) carve(Ht, [anim.r.ix, anim.r.iy]);
+    anim = null;
+    if (pend) { const p = pend; pend = null; showState(p); }
+  }
+
+  /* ---------- drawing ---------- */
+  const cv = $('artCv'), c = cv.getContext('2d');
+  const canAim = () => !!S && !fired && S.phase === 'aim' && S.shooter && (isHost() || S.shooter.pid === myPid);
+  const pivot = () => { const tx = S.shooter.t === 'A' ? 40 : 960; return [tx, Ht[tx] + 40]; };
+  const ptr = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, H - (e.clientY - r.top) * H / r.height]; };
+  function aimFrom(p) {   // pointer position -> angle + power
+    const pv = pivot(), dx = Math.max(1, S.shooter.t === 'A' ? p[0] - pv[0] : pv[0] - p[0]), dy = p[1] - pv[1];
+    ang = clamp(Math.round(Math.atan2(dy, dx) * 180 / Math.PI), 5, 85);
+    pow = clamp(Math.round(Math.hypot(dx, dy) / 320 * 100), 10, 100);
+  }
+  cv.addEventListener('pointerdown', e => { if (!canAim()) return; e.preventDefault(); dragging = true; dragPt = ptr(e); aimFrom(dragPt); try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
+  cv.addEventListener('pointermove', e => { if (!dragging) return; dragPt = ptr(e); aimFrom(dragPt); });
+  cv.addEventListener('pointerup', e => {
+    if (!dragging) return; dragging = false; const p = dragPt; dragPt = null;
+    if (!canAim() || !p) return;
+    const pv = pivot(); if (Math.hypot(p[0] - pv[0], p[1] - pv[1]) < 30) return;   // tiny tap = cancel
+    A.fire();
+  });
+  cv.addEventListener('pointercancel', () => { dragging = false; dragPt = null; });
+  function frame() { try { draw(); } catch (e) {} requestAnimationFrame(frame); }
+  function draw() {
+    if (!S || !Ht || $('artView').classList.contains('hidden')) return;
+    const now = performance.now(), dt = Math.min(.05, (now - (lastT || now)) / 1000); lastT = now;
+    c.save();
+    if (now - shakeT < 280) { const m = 7 * (1 - (now - shakeT) / 280); c.translate((Math.random() - .5) * m, (Math.random() - .5) * m); }
+    const Y = y => H - y;
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#2d9cdb'); g.addColorStop(.7, '#9bd8f5'); g.addColorStop(1, '#e8f6fd');
+    c.fillStyle = g; c.fillRect(-10, -10, W + 20, H + 20);
+    // clouds drift with the wind
+    const drift = 4 + (S.wind || 0) * .6;
+    clouds.forEach(cl => {
+      const x = (((cl.x + now / 1000 * drift * cl.s) % (W + 300)) + (W + 300)) % (W + 300) - 150;
+      c.fillStyle = 'rgba(255,255,255,.85)';
+      [[0, 0, 30], [28, 6, 24], [-28, 8, 22], [8, -12, 22]].forEach(p => { c.beginPath(); c.arc(x + p[0] * cl.s, cl.y + p[1] * cl.s, p[2] * cl.s, 0, 7); c.fill(); });
+    });
+    // ground: dirt with a grass edge
+    const land = () => { c.beginPath(); c.moveTo(0, H + 5); for (let x = 0; x <= W; x += 2) c.lineTo(x, Y(Ht[x])); c.lineTo(W, H + 5); c.closePath(); };
+    const dg = c.createLinearGradient(0, H - 380, 0, H); dg.addColorStop(0, '#b0834f'); dg.addColorStop(1, '#5e4126');
+    land(); c.fillStyle = dg; c.fill();
+    c.save(); land(); c.clip(); c.lineJoin = 'round';
+    c.beginPath(); for (let x = 0; x <= W; x += 2) x ? c.lineTo(x, Y(Ht[x])) : c.moveTo(x, Y(Ht[x]));
+    c.lineWidth = 22; c.strokeStyle = '#7a5a36'; c.stroke();
+    c.lineWidth = 12; c.strokeStyle = '#4caf50'; c.stroke(); c.restore();
+    c.beginPath(); for (let x = 0; x <= W; x += 2) x ? c.lineTo(x, Y(Ht[x])) : c.moveTo(x, Y(Ht[x]));
+    c.lineWidth = 2; c.strokeStyle = '#14532d'; c.stroke();
+    const aimT = S.phase === 'aim' && S.shooter && (isHost() || S.shooter.pid === myPid) ? S.shooter.t : null;
+    ['A', 'B'].forEach(t => {
+      const d = t === 'A' ? 1 : -1, tx = t === 'A' ? 40 : 960, ty = Ht[tx];
+      const a = (aimT === t ? ang : (anim && anim.sh && anim.sh.t === t ? anim.sh.a : 45)) * Math.PI / 180;
+      const rec = anim && anim.sh && anim.sh.t === t ? Math.max(0, 9 * (1 - (now - anim.fireT) / 220)) : 0;
+      // stone tower on a solid base
+      c.fillStyle = '#6b7280'; c.fillRect(tx - 26, Y(ty + 40), 52, 52);
+      c.strokeStyle = '#4b5563'; c.lineWidth = 1.5;
+      for (let r = 0; r < 4; r++) { c.beginPath(); c.moveTo(tx - 26, Y(ty + 40 - r * 13)); c.lineTo(tx + 26, Y(ty + 40 - r * 13)); c.stroke(); }
+      c.fillStyle = COL[t]; c.fillRect(tx - 30, Y(ty + 46), 60, 8);
+      c.strokeStyle = '#111'; c.lineWidth = 2; c.strokeRect(tx - 26, Y(ty + 40), 52, 52);
+      // cannon
+      const px = tx, py = ty + 48, L = 40 - rec;
+      c.lineCap = 'round'; c.strokeStyle = '#111827'; c.lineWidth = 14; c.beginPath(); c.moveTo(px, Y(py)); c.lineTo(px + d * Math.cos(a) * L, Y(py + Math.sin(a) * L)); c.stroke();
+      c.strokeStyle = '#374151'; c.lineWidth = 10; c.beginPath(); c.moveTo(px, Y(py)); c.lineTo(px + d * Math.cos(a) * L, Y(py + Math.sin(a) * L)); c.stroke();
+      c.strokeStyle = COL[t]; c.lineWidth = 11; c.beginPath(); c.moveTo(px + d * Math.cos(a) * (L - 9), Y(py + Math.sin(a) * (L - 9))); c.lineTo(px + d * Math.cos(a) * L, Y(py + Math.sin(a) * L)); c.stroke();
+      c.lineCap = 'butt';
+      c.fillStyle = '#1f2937'; c.beginPath(); c.arc(px, Y(py), 13, 0, 7); c.fill(); c.fillStyle = COL[t]; c.beginPath(); c.arc(px, Y(py), 6, 0, 7); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.9)'; c.font = 'bold 26px sans-serif'; c.textAlign = 'center'; c.fillText(t, tx, Y(ty + 6));
+    });
+    IDS.forEach(i => {
+      const x = fx(i), y = Y(fy(i)), dead = S.hp[i] <= 0;
+      c.save(); c.globalAlpha = dead ? .35 : 1;
+      c.beginPath(); c.arc(x, y, 26, 0, 7); c.save(); c.clip(); if (imgOK(IMG[i])) c.drawImage(IMG[i], x - 26, y - 26, 52, 52);
+      else { c.fillStyle = COL[S.team[i]]; c.fillRect(x - 26, y - 26, 52, 52); c.fillStyle = '#fff'; c.font = 'bold 24px sans-serif'; c.textAlign = 'center'; c.fillText(FI[i][0], x, y + 8); }
+      c.restore();
+      c.lineWidth = 4; c.strokeStyle = COL[S.team[i]]; c.beginPath(); c.arc(x, y, 26, 0, 7); c.stroke();
+      for (let k = 0; k < HP0; k++) { c.fillStyle = k < S.hp[i] ? '#ef4444' : '#475569'; c.fillRect(x - 27 + k * 11, y - 42, 9, 7); }
+      c.fillStyle = '#111'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText(FI[i] + (dead ? ' (out)' : ''), x, y - 47);
+      c.restore();
+    });
+    if (aimT && !fired) {   // dotted guide: first part of the flight, wind included
+      const r = trace({ t: aimT, a: ang, p: pow, w: S.wind }), pv = pivot();
+      c.fillStyle = '#111';
+      for (let k = 2; k < Math.min(r.pts.length, 80); k += 3) { c.beginPath(); c.arc(r.pts[k][0], Y(r.pts[k][1]), 2.4, 0, 7); c.fill(); }
+      if (dragging && dragPt) { c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2; c.setLineDash([6, 6]); c.beginPath(); c.moveTo(pv[0], Y(pv[1])); c.lineTo(dragPt[0], Y(dragPt[1])); c.stroke(); c.setLineDash([]); }
+      c.fillStyle = 'rgba(15,23,42,.85)'; c.fillRect(W / 2 - 100, 44, 200, 26); c.fillStyle = '#fbbf24'; c.font = 'bold 14px sans-serif'; c.textAlign = 'center';
+      c.fillText('Angle ' + ang + '   Power ' + pow + '%', W / 2, 62);
+    }
+    if (S.phase === 'aim' || S.phase === 'fly') {
+      const wv = S.wind, len = Math.abs(wv) / 60 * 70, dir = wv < 0 ? -1 : 1, cxw = W / 2;
+      c.fillStyle = 'rgba(15,23,42,.82)'; c.beginPath(); c.roundRect ? c.roundRect(cxw - 130, 8, 260, 34, 10) : c.rect(cxw - 130, 8, 260, 34); c.fill();
+      c.fillStyle = '#fff'; c.font = 'bold 14px sans-serif'; c.textAlign = 'left'; c.fillText('WIND ' + Math.abs(wv).toFixed(0), cxw - 118, 30);
+      c.strokeStyle = '#fbbf24'; c.fillStyle = '#fbbf24'; c.lineWidth = 4; c.lineCap = 'round';
+      const x0 = cxw + 40 - dir * len / 2, x1 = cxw + 40 + dir * len / 2;
+      c.beginPath(); c.moveTo(x0, 25); c.lineTo(x1, 25); c.stroke();
+      c.beginPath(); c.moveTo(x1 + dir * 8, 25); c.lineTo(x1 - dir * 2, 18); c.lineTo(x1 - dir * 2, 32); c.closePath(); c.fill(); c.lineCap = 'butt';
+    }
+    if (anim) {
+      const r = anim.r, n = Math.min(Math.floor(anim.k), r.pts.length - 1);
+      c.strokeStyle = 'rgba(17,17,17,.35)'; c.lineWidth = 1.5; c.beginPath();
+      r.pts.slice(0, n + 1).forEach((p, j) => j ? c.lineTo(p[0], Y(p[1])) : c.moveTo(p[0], Y(p[1]))); c.stroke();
+      const p = r.pts[n];
+      if (!anim.t0) { c.fillStyle = '#1f2937'; c.strokeStyle = '#111'; c.lineWidth = 2; c.beginPath(); c.arc(p[0], Y(p[1]), 6, 0, 7); c.fill(); c.stroke(); }
+      const e0 = now - anim.fireT;   // muzzle flash
+      if (e0 < 200) {
+        const sh = anim.sh, d = sh.t === 'A' ? 1 : -1, tx = sh.t === 'A' ? 40 : 960, ty = Ht[tx] + 48, aa = sh.a * Math.PI / 180;
+        const fxp = tx + d * Math.cos(aa) * 46, fyp = ty + Math.sin(aa) * 46, rr = 10 + e0 / 7;
+        const fg = c.createRadialGradient(fxp, Y(fyp), 1, fxp, Y(fyp), rr); fg.addColorStop(0, 'rgba(255,255,200,' + (1 - e0 / 200) + ')'); fg.addColorStop(1, 'rgba(251,146,60,0)');
+        c.fillStyle = fg; c.beginPath(); c.arc(fxp, Y(fyp), rr, 0, 7); c.fill();
+      }
+      if (n < r.pts.length - 1) anim.k += 2;
+      else {
+        if (!anim.t0) { anim.t0 = now; if (!r.off) { impactFx(r); shakeT = now; } }
+        const e = now - anim.t0;
+        if (!r.off) {
+          c.fillStyle = 'rgba(251,191,36,' + Math.max(0, .9 - e / 450) + ')'; c.beginPath(); c.arc(r.ix, Y(r.iy), CR * (.3 + e / 600), 0, 7); c.fill();
+          c.fillStyle = 'rgba(239,68,68,' + Math.max(0, .8 - e / 500) + ')'; c.beginPath(); c.arc(r.ix, Y(r.iy), CR * (.2 + e / 900), 0, 7); c.fill();
+        }
+        if (e > 700) endAnim();
+      }
+    }
+    // particles (dust, smoke, sparks)
+    parts = parts.filter(q => q.life > 0);
+    parts.forEach(q => {
+      q.life -= dt; q.vy -= q.g * dt; q.x += q.vx * dt; q.y += q.vy * dt;
+      const al = Math.max(0, q.life / q.max); c.fillStyle = q.col; c.globalAlpha = al * .85;
+      c.beginPath(); c.arc(q.x, Y(q.y), q.r * (q.grow ? (2 - al) : al + .3), 0, 7); c.fill(); c.globalAlpha = 1;
+    });
+    c.restore();
+  }
+  function muzzleSmoke(team, a) {
+    const d = team === 'A' ? 1 : -1, tx = team === 'A' ? 40 : 960, ty = Ht[tx] + 48, aa = a * Math.PI / 180;
+    for (let k = 0; k < 9; k++) parts.push({ x: tx + d * Math.cos(aa) * 44, y: ty + Math.sin(aa) * 44, vx: d * (30 + Math.random() * 70) * Math.cos(aa), vy: (20 + Math.random() * 60) * Math.sin(aa) + Math.random() * 25, g: -15, life: .7 + Math.random() * .5, max: 1.2, r: 6 + Math.random() * 6, col: '#e5e7eb', grow: 1 });
+  }
+  function impactFx(r) {
+    const cols = ['#7a5a36', '#a47c4c', '#5e4126', '#9ca3af'];
+    for (let k = 0; k < 28; k++) { const an = Math.random() * Math.PI, sp = 60 + Math.random() * 190; parts.push({ x: r.ix, y: r.iy, vx: Math.cos(an) * sp * (Math.random() < .5 ? -1 : 1), vy: Math.sin(an) * sp, g: 420, life: .6 + Math.random() * .6, max: 1.2, r: 3 + Math.random() * 4, col: cols[k % 4] }); }
+    for (let k = 0; k < 8; k++) parts.push({ x: r.ix + (Math.random() - .5) * 30, y: r.iy + 5, vx: (Math.random() - .5) * 40, vy: 25 + Math.random() * 40, g: -10, life: 1 + Math.random() * .5, max: 1.5, r: 9 + Math.random() * 8, col: '#d1d5db', grow: 1 });
+    if (r.hit) for (let k = 0; k < 16; k++) { const an = Math.random() * 6.28, sp = 80 + Math.random() * 160; parts.push({ x: fx(r.hit), y: fy(r.hit), vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, g: 300, life: .5 + Math.random() * .4, max: .9, r: 3 + Math.random() * 3, col: k % 2 ? '#ef4444' : '#fbbf24' }); }
+  }
+
+  /* ---------- buttons & screens ---------- */
+  function sendJoin() { sendMsg({ type: 'ART_JOIN', pid: myPid, n: myName, t: myT }); }
+  const A = window.art = {
+    join(t) { myT = t; full = false; acked = false; sessionStorage.setItem('gga_t', t); sendJoin(); render(); },
+    buzz() { if (amBuzzer()) sendMsg({ type: 'ART_BUZZ', pid: myPid, n: myName, t: myT }); },
+    pick(i) { if (isHost()) grade(i === corr); else sendMsg({ type: 'ART_ANS', pid: myPid, n: myName, t: myT, i }); },
+    fire() { fired = true; if (isHost()) hFire(ang, pow); else sendMsg({ type: 'ART_FIRE', pid: myPid, a: ang, p: pow }); },
+    team(i, t) { S.team[i] = t; push(); },
+    buzzerOf(t, id) { S.buzzer[t] = S.buzzer[t] === id ? null : id; push(); },
+    terrain() { S.seed = fairSeed(); S.craters = []; push(); },
+    start() { S.phase = 'idle'; S.msg = 'Battle started! Ask the first question.'; push(); },
+    ask, grade, newGame,
+    setup() { if (!confirm('Go back to setup? This restarts the battle (HP and terrain reset).')) return; const b = S.buzzer, tm = S.team; S = Object.assign(fresh(), { buzzer: b, team: tm }); usedQ = []; push(); },
+    skip() { S.phase = 'idle'; S.msg = 'Question skipped.'; push(); },
+    claim() { sendMsg({ type: 'ART_CLAIM', pid: myPid, n: myName, t: myT }); },
+    unclaim() { sendMsg({ type: 'ART_UNCLAIM', pid: myPid }); }
+  };
+  function amBuzzer() { return !isHost() && myT && S && S.phase === 'open' && !S.locked[myT] && S.buzzer[myT] === myPid; }
+
+  function render() {
+    if (!S) { $('artPanel').innerHTML = '<div class="card">Waiting for the host...</div>'; return; }
+    const host = isHost(), iAmShooter = S.phase === 'aim' && S.shooter && S.shooter.pid === myPid;
+    let h = '<div class="acard text-center font-bold text-amber-300">' + esc(S.msg) + '</div>';
+    if (S.q && ['ask', 'open', 'answer'].includes(S.phase)) {
+      const mine = S.phase === 'answer' && (host || (S.buzzed === myT && S.buzzer[myT] === myPid));
+      h += '<div class="acard space-y-2"><div class="font-bold">' + esc(S.q.prompt) + '</div><div class="grid sm:grid-cols-2 gap-2">' +
+        S.q.choices.map((ch, i) => '<button class="abtn" ' + (mine ? '' : 'disabled') + ' onclick="art.pick(' + i + ')">' + 'ABCD'[i] + '. ' + esc(ch) + (host && i === corr ? ' (correct)' : '') + '</button>').join('') + '</div></div>';
+    }
+    if (amBuzzer()) h += '<button class="abtn ago w-full text-2xl py-6" onclick="art.buzz()">BUZZ! (Space)</button>';
+    if (S.phase === 'aim' && (host || iAmShooter)) {
+      h += '<div class="acard text-center space-y-1"><b>' + (iAmShooter ? 'You are the shooter!' : 'Host: aim for ' + esc(S.shooter.name)) + ' - wind ' + S.wind.toFixed(1) + '</b>' +
+        '<div class="text-sm text-slate-300">Drag on the battlefield from your tower toward where you want to shoot. Farther drag = more power. The dotted line is your guide. Let go to FIRE!</div></div>';
+    }
+    if (host) h += hostUI();
+    else if (!myT) {
+      h += '<div class="acard space-y-2"><b>' + (full ? 'That team is full (30 max) - pick the other team.' : 'Pick your team, ' + esc(myName || 'player') + '!') + '</b><div class="flex gap-2">' +
+        '<button class="abtn ago flex-1" onclick="art.join(\'A\')">Join Team A (green)</button><button class="abtn flex-1" style="background:#d946ef" onclick="art.join(\'B\')">Join Team B (purple)</button></div></div>';
+    } else {
+      const bz = S.buzzer[myT], bn = (S.bn || {})[myT] || '';
+      h += '<div class="acard text-center space-y-2">' +
+        (bz === myPid ? '<div class="font-bold text-amber-300">You are Team ' + myT + '\'s BUZZER</div>' + (['setup', 'idle', 'over'].includes(S.phase) ? '<button class="abtn" onclick="art.unclaim()">Give up buzzer</button>' : '')
+          : bz ? '<div class="text-sm text-slate-300">Team ' + myT + ' buzzer: <b>' + esc(bn) + '</b> (only they can buzz)</div>'
+          : '<div class="text-sm text-slate-300">Team ' + myT + ' has no buzzer yet.</div><button class="abtn ago" onclick="art.claim()">I\'ll be the buzzer!</button>') +
+        '<div class="text-xs text-slate-400">You are ' + esc(myName) + ' on Team ' + myT + (acked ? '' : ' (joining...)') + '</div></div>';
+    }
+    cv.style.touchAction = canAim() ? 'none' : 'auto';
+    $('artPanel').innerHTML = h;
+    $('artSub').textContent = 'Team A ' + S.cnt.A + '/30 players  |  Team B ' + S.cnt.B + '/30 players';
+  }
+  window.artRender = render;
+
+  function hostUI() {
+    const ok = ['A', 'B'].every(t => IDS.filter(i => S.team[i] === t).length === 2);
+    let h = '<div class="acard space-y-2"><b>Host controls</b>';
+    if (S.phase === 'setup') {
+      h += IDS.map(i => '<div class="flex items-center gap-2 text-sm"><img src="' + IMG[i].src + '" class="w-8 h-8 rounded-full"><span class="w-14">' + FI[i] + '</span>' +
+        ['A', 'B'].map(t => '<button class="abtn" style="' + (S.team[i] === t ? 'background:' + COL[t] + ';color:#000' : '') + '" onclick="art.team(\'' + i + '\',\'' + t + '\')">Team ' + t + '</button>').join('') + '</div>').join('') +
+        '<div class="flex gap-2"><button class="abtn" onclick="art.terrain()">New terrain</button><button class="abtn ago" ' + (ok ? '' : 'disabled') + ' onclick="art.start()">Start battle</button></div>' +
+        (ok ? '' : '<p class="text-xs text-rose-300">Each team needs exactly 2 fighters.</p>');
+    }
+    else if (S.phase === 'idle') h += '<div class="flex flex-wrap gap-2"><button class="abtn ago" onclick="art.ask()">Ask next question</button><button class="abtn" onclick="art.setup()">Change fighters / restart</button></div>';
+    else if (S.phase === 'over') h += '<div class="flex flex-wrap gap-2"><button class="abtn ago" onclick="art.newGame()">New game (new terrain)</button><button class="abtn" onclick="art.setup()">Change fighters</button></div>';
+    else if (['ask', 'open'].includes(S.phase)) h += '<button class="abtn" onclick="art.skip()">Skip question</button>';
+    if (S.phase === 'answer') h += '<div class="flex gap-2"><button class="abtn ago" onclick="art.grade(true)">Mark correct</button><button class="abtn" onclick="art.grade(false)">Mark wrong</button></div>';
+    h += '</div><div class="grid sm:grid-cols-2 gap-3">' + ['A', 'B'].map(t => {
+      const m = Object.entries(roster).filter(([k, p]) => p[1] === t);
+      return '<div class="acard"><b style="color:' + COL[t] + '">Team ' + t + ' (' + m.length + '/30)</b><div class="flex flex-wrap gap-1 mt-2">' +
+        (m.map(([k, p]) => '<button class="abtn" style="padding:3px 8px;' + (S.buzzer[t] === k ? 'background:#f59e0b;color:#000' : '') + '" onclick="art.buzzerOf(\'' + t + '\',\'' + k + '\')">' + (S.buzzer[t] === k ? '[buzzer] ' : '') + esc(p[0]) + '</button>').join('') || '<span class="text-xs text-slate-400">No players yet</span>') +
+        '</div><p class="text-xs text-slate-400 mt-1">Only 1 buzzer per team. Players can claim it, or tap a name to set/clear it.</p></div>';
+    }).join('') + '</div>';
+    return h;
+  }
+
+  addEventListener('keydown', e => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) || !S) return;
+    if (typeof modeOf !== 'function' || modeOf() !== 'artillery' || !currentRole) return;
+    if (e.code === 'Space' && !isHost()) { e.preventDefault(); A.buzz(); }
+  });
+  // players keep retrying to join until the host confirms them
+  setInterval(() => { if (!isHost() && currentRole && modeOf() === 'artillery' && myT && !acked) sendJoin(); }, 4000);
+  frame();
+})();
+  </script>
+  <script src="class-footer.js"></script>
+</body>
+</html>
